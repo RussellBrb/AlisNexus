@@ -506,6 +506,14 @@ body {
 .lang-sug-item .sug-dot { width: 8px; height: 8px; border-radius: 50%; }
 .lang-sug-item .sug-pct { margin-left: auto; font-size: 11px; color: var(--t3); }
 
+/* ── Login gate ──────────────────────────────────────────────────────────── */
+.login-gate {
+  position: fixed; inset: 0; background: var(--bg); z-index: 500;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 1; transition: opacity .4s;
+}
+.login-gate.hide { opacity: 0; pointer-events: none; }
+
 /* ── Animations ─────────────────────────────────────────────────────────── */
 @keyframes rise { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -525,8 +533,27 @@ body {
   .last-upd { display: none; }
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
+<!-- ── Login Gate ─────────────────────────────────────────────────────────── -->
+<div class="login-gate" id="login-gate">
+  <div class="onboard-box" style="text-align:center">
+    <div class="onboard-logo">Nexus</div>
+    <p class="onboard-sub" style="margin-bottom:32px">ALIS Project Hub<br>Sign in with your company email.</p>
+    <div id="login-form">
+      <input class="onboard-input" id="login-email" type="email" placeholder="you@go-alis.com" autocomplete="email" style="text-align:left">
+      <button class="btn-go" onclick="sendMagicLink()">Send Magic Link →</button>
+      <p id="login-error" style="display:none;color:#f87171;font-size:13px;margin-top:14px"></p>
+    </div>
+    <div id="login-sent" style="display:none">
+      <div style="font-size:48px;margin-bottom:16px">✉️</div>
+      <p style="color:var(--t1);font-size:16px;font-weight:600;margin-bottom:8px">Check your email</p>
+      <p style="color:var(--t2);font-size:13px">Magic link sent to <strong id="login-sent-email" style="color:var(--accent-l)"></strong><br><br>Click the link in the email to sign in.</p>
+    </div>
+  </div>
+</div>
 
 <!-- ── Onboarding ──────────────────────────────────────────────────────────── -->
 <div class="onboard" id="onboard">
@@ -731,6 +758,41 @@ body {
 </div>
 
 <script>
+// ── Supabase Auth ─────────────────────────────────────────────────────────
+const SUPA_URL = 'https://ukncfwubvmcnezgxqrsb.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVrbmNmd3Vidm1jbmV6Z3hxcnNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NjUwMDgsImV4cCI6MjA5NTA0MTAwOH0.9jQWdWOQ6AvEU7osMnYdaf1Q4Xftn6DQU3XoPYDMvvY';
+const ALLOWED_DOMAINS = ['go-alis.com', 'medtelligent.com'];
+const _sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+let supabaseUser = null;
+
+async function sendMagicLink() {
+  const email = (document.getElementById('login-email').value||'').trim().toLowerCase();
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  if (!email) { errEl.textContent = 'Please enter your email.'; errEl.style.display='block'; return; }
+  const domain = email.split('@')[1];
+  if (!ALLOWED_DOMAINS.includes(domain)) {
+    errEl.textContent = 'Access is restricted to @go-alis.com and @medtelligent.com emails.';
+    errEl.style.display = 'block'; return;
+  }
+  const btn = document.querySelector('#login-form .btn-go');
+  btn.textContent = 'Sending…'; btn.disabled = true;
+  const { error } = await _sb.auth.signInWithOtp({
+    email, options: { emailRedirectTo: 'https://russellbrb.github.io/AlisNexus' }
+  });
+  if (error) {
+    errEl.textContent = error.message; errEl.style.display='block';
+    btn.textContent = 'Send Magic Link →'; btn.disabled = false; return;
+  }
+  document.getElementById('login-form').style.display = 'none';
+  document.getElementById('login-sent-email').textContent = email;
+  document.getElementById('login-sent').style.display = 'block';
+}
+
+function signOut() {
+  _sb.auth.signOut().then(() => { localStorage.removeItem('nexus_profile'); location.reload(); });
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // USER PROFILE
 // ═══════════════════════════════════════════════════════════════════════════
@@ -798,6 +860,7 @@ function completeOnboard() {
   const team = teamInput.value;
   userProfile = { name, team };
   localStorage.setItem('nexus_profile', JSON.stringify(userProfile));
+  if (supabaseUser) _sb.auth.updateUser({ data: { name, team } });
   document.getElementById('onboard').classList.add('hide');
   setTimeout(() => document.getElementById('onboard').style.display = 'none', 400);
   applyProfile();
@@ -1548,8 +1611,37 @@ function deleteCurrentProject() {
   updateMetrics();
 }
 
-initProfile();
-if (userProfile) loadAndRender();
+// ── Supabase boot ────────────────────────────────────────────────────────
+(async function() {
+  const gate = document.getElementById('login-gate');
+
+  async function hideGateAndBoot(user) {
+    supabaseUser = user;
+    gate.classList.add('hide');
+    setTimeout(function() { gate.style.display = 'none'; }, 400);
+    const meta = user.user_metadata || {};
+    if (meta.name && meta.team) {
+      userProfile = { name: meta.name, team: meta.team };
+      localStorage.setItem('nexus_profile', JSON.stringify(userProfile));
+    } else if (!userProfile) {
+      var nameEl = document.getElementById('ob-name');
+      if (nameEl) nameEl.value = user.email.split('@')[0];
+    }
+    initProfile();
+    if (userProfile) loadAndRender();
+  }
+
+  _sb.auth.onAuthStateChange(function(event, session) {
+    if (event === 'SIGNED_IN' && session) hideGateAndBoot(session.user);
+    else if (event === 'SIGNED_OUT') { localStorage.removeItem('nexus_profile'); location.reload(); }
+  });
+
+  const { data } = await _sb.auth.getSession();
+  if (data.session) {
+    hideGateAndBoot(data.session.user);
+  }
+  // else: login gate stays visible
+})();
 </script>
 </body>
 </html>
