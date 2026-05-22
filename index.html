@@ -1612,6 +1612,10 @@ function deleteCurrentProject() {
 }
 
 // ── Supabase boot ────────────────────────────────────────────────────────
+// Fast path: if profile already in localStorage, hide onboarding immediately
+// without waiting for the async Supabase session check
+if (userProfile) { initProfile(); }
+
 (async function() {
   const gate = document.getElementById('login-gate');
 
@@ -1625,11 +1629,26 @@ function deleteCurrentProject() {
       localStorage.setItem('nexus_profile', JSON.stringify(userProfile));
     } else if (!userProfile) {
       var nameEl = document.getElementById('ob-name');
-      if (nameEl) nameEl.value = user.email.split('@')[0];
+          if (nameEl) nameEl.value = user.email.split('@')[0];
     }
     initProfile();
     if (userProfile) loadAndRender();
+    else {
+      var go = document.getElementById('ob-go');
+      if (go) go.removeAttribute('disabled');
+    }
   }
 
   _sb.auth.onAuthStateChange(function(event, session) {
-    if (event === 'SIGNED_IN' && session) 
+    if (event === 'SIGNED_IN' && session) hideGateAndBoot(session.user);
+    else if (event === 'SIGNED_OUT') { localStorage.removeItem('nexus_profile'); location.reload(); }
+  });
+
+  const { data } = await _sb.auth.getSession();
+  if (data.session) {
+    hideGateAndBoot(data.session.user);
+  }
+})();
+</script>
+</body>
+</html>
