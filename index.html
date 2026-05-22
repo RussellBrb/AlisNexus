@@ -930,7 +930,7 @@ function getSimilar(project, all, limit=4) {
 // GITHUB ENRICHMENT
 // ═══════════════════════════════════════════════════════════════════════════
 var ghCache = {};
-var ghToken = sessionStorage.getItem('nexus_gh_token') || '';
+var ghToken = localStorage.getItem('nexus_gh_token') || '';
 
 function ghHeaders() {
   const h = { 'Accept': 'application/vnd.github.v3+json' };
@@ -1005,7 +1005,7 @@ function closeTokenDialog() { document.getElementById('token-dialog').classList.
 function saveToken() {
   const val = document.getElementById('token-input').value.trim();
   if (val) {
-    ghToken = val; sessionStorage.setItem('nexus_gh_token', val);
+    ghToken = val; localStorage.setItem('nexus_gh_token', val);
     ghCache = {};
     Object.keys(sessionStorage).filter(k=>k.startsWith('gh_')).forEach(k=>sessionStorage.removeItem(k));
   }
@@ -1619,4 +1619,4 @@ if (userProfile) { initProfile(); }
 })();
 </script>
 </body>
-</html>
+</html>    
