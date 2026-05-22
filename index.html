@@ -54,10 +54,11 @@ body {
 
 /* ── Onboarding ─────────────────────────────────────────────────────────── */
 .onboard {
-  position: fixed; inset: 0; background: var(--bg); z-index: 1000;
-  display: flex; align-items: center; justify-content: center;
-  opacity: 1; transition: opacity .4s;
+  position: fixed; inset: 0; background: var(--bg); z-index: 1500;
+  display: none; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .4s;
 }
+.onboard.show { display: flex; opacity: 1; }
 .onboard.hide { opacity: 0; pointer-events: none; }
 .onboard-box {
   width: min(480px, 92vw);
@@ -529,11 +530,11 @@ body {
 
 /* ── Login gate ──────────────────────────────────────────────────────────── */
 .login-gate {
-  position: fixed; inset: 0; background: var(--bg); z-index: 500;
+  position: fixed; inset: 0; background: var(--bg); z-index: 2000;
   display: flex; align-items: center; justify-content: center;
   opacity: 1; transition: opacity .4s;
 }
-.login-gate.hide { opacity: 0; pointer-events: none; }
+.login-gate.hide { opacity: 0; pointer-events: none; display: none !important; }
 
 /* ── Animations ─────────────────────────────────────────────────────────── */
 @keyframes rise { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
@@ -833,11 +834,18 @@ let userProfile = JSON.parse(localStorage.getItem('nexus_profile') || 'null');
 
 function initProfile() {
   if (userProfile) {
-    document.getElementById('onboard').classList.add('hide');
-    setTimeout(() => document.getElementById('onboard').style.display = 'none', 400);
+    // Profile exists — hide onboarding (in case it was shown), apply profile
+    const ob = document.getElementById('onboard');
+    ob.classList.remove('show');
+    ob.classList.add('hide');
+    setTimeout(() => { ob.style.display = 'none'; }, 400);
     applyProfile();
+  } else {
+    // No profile yet — show onboarding screen
+    const ob = document.getElementById('onboard');
+    ob.style.display = 'flex';
+    setTimeout(() => ob.classList.add('show'), 10);
   }
-  // else: onboarding shows
 }
 
 function applyProfile() {
@@ -881,8 +889,10 @@ function completeOnboard() {
   userProfile = { name, team };
   localStorage.setItem('nexus_profile', JSON.stringify(userProfile));
   if (supabaseUser) _sb.auth.updateUser({ data: { name, team } });
-  document.getElementById('onboard').classList.add('hide');
-  setTimeout(() => document.getElementById('onboard').style.display = 'none', 400);
+  const ob = document.getElementById('onboard');
+  ob.classList.remove('show');
+  ob.classList.add('hide');
+  setTimeout(() => { ob.style.display = 'none'; }, 400);
   applyProfile();
   loadAndRender();
 }
@@ -1672,11 +1682,25 @@ if (userProfile) { initProfile(); }
       localStorage.setItem('nexus_gh_token', ghToken);
     }
     initProfile();
-    if (userProfile) loadAndRender();
-    else {
-      var go = document.getElementById('ob-go');
-      if (go) go.removeAttribute('disabled');
+    if (userProfile) {
+      loadAndRender();
     }
+  }
+
+  // Listen for auth events — fires when magic link is clicked
+  _sb.auth.onAuthStateChange(function(event, session) {
+    if (event === 'SIGNED_IN' && session) {
+      hideGateAndBoot(session.user);
+    } else if (event === 'SIGNED_OUT') {
+      localStorage.removeItem('nexus_profile');
+      location.reload();
+    }
+  });
+
+  // On page load — check for existing session (persists across tabs/refreshes)
+  const { data } = await _sb.auth.getSession();
+  if (data.session) {
+    hideGateAndBoot(data.session.user);
   }
 })();
 </script>
