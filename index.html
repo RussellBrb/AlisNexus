@@ -601,10 +601,6 @@ body {
   </div>
   <div class="header-right">
     <span class="last-upd" id="last-upd"></span>
-    <button class="btn-sm" onclick="openSetupDialog(true)">
-      <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M10.3 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l4 4v3.3"/><path d="M15 18h6m-3-3v6"/></svg>
-      Data source
-    </button>
     <button class="btn-sm" onclick="refresh()">
       <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
       Refresh
@@ -1329,37 +1325,10 @@ const DEMO = [
 ];
 
 async function loadAndRender() {
-  const csvUrl = getSheetCsvUrl();
-
-  // No sheet connected — just show locally-added projects
-  if (!csvUrl) {
-    sheetProjects = [];
-    allProjects = [...addedProjects];
-    renderAll(); updateMetrics();
-    enrichAllWithGitHub(allProjects);
-    return;
-  }
-
-  // Sheet URL set — try to load it
-  document.getElementById('grid').innerHTML = '<div class="loading"><div class="loading-spinner"></div><div>Loading projects…</div></div>';
-  try {
-    const sep = csvUrl.includes('?')?'&':'?';
-    const res = await fetch(csvUrl+sep+'t='+Date.now());
-    if (!res.ok) throw new Error('status '+res.status);
-    const csv = await res.text();
-    sheetProjects = parseCSV(csv);
-    allProjects = [...addedProjects, ...sheetProjects];
-    document.getElementById('last-upd').textContent = 'Updated '+new Date().toLocaleTimeString();
-    renderAll(); updateMetrics();
-    enrichAllWithGitHub(allProjects);
-  } catch(e) {
-    // Sheet failed — fall back to locally-added projects silently
-    sheetProjects = [];
-    allProjects = [...addedProjects];
-    document.getElementById('last-upd').textContent = 'Sheet unavailable';
-    renderAll(); updateMetrics();
-    enrichAllWithGitHub(allProjects);
-  }
+  sheetProjects = [];
+  allProjects = [...addedProjects];
+  renderAll(); updateMetrics();
+  enrichAllWithGitHub(allProjects);
 }
 
 function refresh() { ghCache={}; Object.keys(sessionStorage).filter(k=>k.startsWith('gh_')).forEach(k=>sessionStorage.removeItem(k)); loadAndRender(); }
@@ -1619,6 +1588,7 @@ function deleteCurrentProject() {
 }
 
 // ── Supabase boot ────────────────────────────────────────────────────────
+localStorage.removeItem('nexus_sheet_url'); // sheet feature disabled
 // Fast path: if profile already in localStorage, hide onboarding immediately
 // without waiting for the async Supabase session check
 if (userProfile) { initProfile(); }
