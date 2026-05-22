@@ -783,7 +783,9 @@ body {
 const SUPA_URL = 'https://ukncfwubvmcnezgxqrsb.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVrbmNmd3Vidm1jbmV6Z3hxcnNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NjUwMDgsImV4cCI6MjA5NTA0MTAwOH0.9jQWdWOQ6AvEU7osMnYdaf1Q4Xftn6DQU3XoPYDMvvY';
 const ALLOWED_DOMAINS = ['go-alis.com', 'medtelligent.com'];
-const _sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+const _sb = supabase.createClient(SUPA_URL, SUPA_KEY, {
+  auth: { flowType: 'implicit' }
+});
 let supabaseUser = null;
 
 async function sendMagicLink() {
