@@ -1169,9 +1169,9 @@ async function doFetchPreview(gh) {
   if (!data || data._private || data._rateLimit) {
     zone.className = 'url-zone';
     if (data && data._private) {
-      status.innerHTML = '<span class="gh-private">🔒 Private repo — enter your GitHub token to load it</span>';
+      status.innerHTML = '<span class="gh-private">🔒 Private repo — <a href="#" onclick="event.preventDefault();document.getElementById(\'token-dialog\').classList.add(\'open\')" style="color:var(--accent-l);text-decoration:underline">add GitHub token to load it</a></span>';
     } else if (data && data._rateLimit) {
-      status.innerHTML = '<span class="fetch-err">Rate limited — add a GitHub token to continue</span>';
+      status.innerHTML = '<span class="fetch-err">Rate limited — <a href="#" onclick="event.preventDefault();document.getElementById(\'token-dialog\').classList.add(\'open\')" style="color:var(--accent-l);text-decoration:underline">add GitHub token</a></span>';
     } else {
       status.innerHTML = '<span class="fetch-err">Could not find that repo — check the URL</span>';
     }
@@ -1632,16 +1632,4 @@ function deleteCurrentProject() {
   }
 
   _sb.auth.onAuthStateChange(function(event, session) {
-    if (event === 'SIGNED_IN' && session) hideGateAndBoot(session.user);
-    else if (event === 'SIGNED_OUT') { localStorage.removeItem('nexus_profile'); location.reload(); }
-  });
-
-  const { data } = await _sb.auth.getSession();
-  if (data.session) {
-    hideGateAndBoot(data.session.user);
-  }
-  // else: login gate stays visible
-})();
-</script>
-</body>
-</html>
+    if (event === 'SIGNED_IN' && session) 
