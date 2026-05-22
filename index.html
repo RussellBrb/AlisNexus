@@ -254,14 +254,35 @@ body {
 }
 .card-date { font-size: 11px; color: var(--t3); }
 
-/* Local badge */
+/* Mine badge / remove btn */
 .local-badge {
   position: absolute; top: 10px; right: 12px;
-  font-size: 9px; padding: 2px 6px; border-radius: 20px;
-  background: var(--accent-g); color: var(--accent-l); font-weight: 600;
-  cursor: pointer; transition: background .15s;
+  width: 22px; height: 22px; border-radius: 50%; border: none;
+  background: rgba(239,68,68,.08); color: var(--t3); font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all .15s; opacity: 0;
 }
+.card:hover .local-badge { opacity: 1; }
 .local-badge:hover { background: rgba(239,68,68,.2); color: #f87171; }
+.card.is-mine { box-shadow: 0 0 0 1.5px var(--accent) inset; }
+
+/* Contributor chips */
+.contributors-row {
+  padding: 12px 24px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.contrib-label { font-size: 11px; color: var(--t3); font-weight: 500; margin-right: 2px; }
+.contrib-chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px 4px 4px; border-radius: 20px;
+  border: 1px solid var(--border); background: transparent;
+  cursor: pointer; transition: all .15s; font-size: 12px; color: var(--t2);
+}
+.contrib-chip:hover { border-color: var(--border2); color: var(--t1); }
+.contrib-chip.active { border-color: transparent; color: #fff; }
+.contrib-chip .ca { width: 20px; height: 20px; border-radius: 50%; font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.contrib-chip .cn { font-weight: 500; }
+.contrib-chip .cc { opacity: .55; font-size: 11px; }
+.contrib-chip .you-tag { font-size: 9px; font-weight: 700; opacity: .7; }
 
 /* ── Loading / Empty ────────────────────────────────────────────────────── */
 .loading, .empty-state {
@@ -628,6 +649,9 @@ body {
 
 <!-- ── Filters ────────────────────────────────────────────────────────────── -->
 <div class="filters" id="filters"></div>
+
+<!-- ── Contributors ─────────────────────────────────────────────────────── -->
+<div class="contributors-row" id="contrib-row"></div>
 
 <!-- ── Grid ───────────────────────────────────────────────────────────────── -->
 <main class="main">
@@ -1265,6 +1289,7 @@ let sheetProjects = [];
 let filtered = [];
 let activeTeam = 'all';
 let activeStatus = 'all';
+let activeOwner = 'all';
 
 function parseCSVLine(line) {
   const result=[], re=/("(?:[^"]|"")*"|[^,]*),?/g; let m;
@@ -1398,9 +1423,10 @@ function renderCard(p, idx) {
   const tags = (p.tags||'').split(',').filter(Boolean).slice(0,4);
   const tagHtml = tags.map(t=>`<span class="tag">${t.trim()}</span>`).join('');
   const ownerAv = p.owner ? `<div class="owner-av" style="background:${teamCol}22;color:${teamCol}">${ownerInitials(p.owner)}</div>` : '';
-  const localBadge = p._mine ? `<div class="local-badge" onclick="event.stopPropagation();removeLocalProject('${p._id}')" title="Remove project">local ✕</div>` : '';
+  const mineCls = p._mine ? 'is-mine' : '';
+  const localBadge = p._mine ? `<button class="local-badge" onclick="event.stopPropagation();removeLocalProject('${p._id}')" title="Remove my project">✕</button>` : '';
 
-  return `<div class="card ${teamClass(p.team)} stagger-${Math.min(idx+1,5)}" onclick="openDetail(${allProjects.indexOf(p)})">
+  return `<div class="card ${teamClass(p.team)} ${mineCls} stagger-${Math.min(idx+1,5)}" onclick="openDetail(${allProjects.indexOf(p)})">
     ${localBadge}
     <div class="card-top">
       <div class="card-name">${p.name}</div>
@@ -1427,8 +1453,9 @@ function renderAll() {
   filtered = allProjects.filter(p => {
     const teamMatch = activeTeam==='all' || p.team===activeTeam;
     const statusMatch = activeStatus==='all' || p.status===activeStatus;
+    const ownerMatch = activeOwner==='all' || p.owner===activeOwner;
     const searchMatch = !query || [p.name,p.one_liner,p.description,p.tags,p.owner].join(' ').toLowerCase().includes(query);
-    return teamMatch && statusMatch && searchMatch;
+    return teamMatch && statusMatch && ownerMatch && searchMatch;
   });
 
   const grid = document.getElementById('grid');
@@ -1463,10 +1490,45 @@ function renderFilters() {
     return `<button class="pill ${act}" style="${act?'background:'+col+';':''}" onclick="setStatus('${s}')">${s!=='all'?`<span class="dot" style="background:${col}"></span>`:''}${label}</button>`;
   }).join('');
   document.getElementById('filters').innerHTML = `<div class="filter-group">${teamPills}</div><div class="filter-divider"></div><div class="filter-group">${statusPills}</div>`;
+
+  // Contributor chips — one per unique owner, dynamically built
+  const owners = [...new Set(allProjects.map(p=>p.owner).filter(Boolean))];
+  if (owners.length > 1) {
+    const myName = userProfile ? userProfile.name : '';
+    const chips = owners.map(name => {
+      const proj = allProjects.find(p=>p.owner===name);
+      const col = proj ? teamColor(proj.team) : 'var(--accent)';
+      const count = allProjects.filter(p=>p.owner===name).length;
+      const initials = ownerInitials(name);
+      const act = activeOwner===name ? 'active' : '';
+      const isMe = name===myName;
+      const style = act ? `background:${col};border-color:${col}` : '';
+      const youTag = isMe ? `<span class="you-tag">you</span>` : '';
+      return `<button class="contrib-chip ${act}" style="${style}" onclick="setOwner('${name.replace(/'/g,"\'")}')">
+        <div class="ca" style="background:${col}22;color:${col}">${initials}</div>
+        <span class="cn">${name}</span>${youTag}
+        <span class="cc">${count}</span>
+      </button>`;
+    }).join('');
+    const allAct = activeOwner==='all' ? 'active' : '';
+    const allStyle = activeOwner==='all' ? 'background:var(--accent);border-color:var(--accent)' : '';
+    const contribRow = document.getElementById('contrib-row');
+    if (contribRow) {
+      contribRow.innerHTML = `<span class="contrib-label">People</span>
+        <button class="contrib-chip ${allAct}" style="${allStyle}" onclick="setOwner('all')">
+          <div class="ca" style="background:var(--accent)22;color:var(--accent)">All</div>
+          <span class="cn">Everyone</span><span class="cc">${allProjects.length}</span>
+        </button>${chips}`;
+    }
+  } else {
+    const contribRow = document.getElementById('contrib-row');
+    if (contribRow) contribRow.innerHTML = '';
+  }
 }
 
 function setTeam(t) { activeTeam=t; renderAll(); }
 function setStatus(s) { activeStatus=s; renderAll(); }
+function setOwner(o) { activeOwner=o; renderAll(); }
 document.getElementById('search-input').addEventListener('input', ()=>renderAll());
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1615,3 +1677,8 @@ if (userProfile) { initProfile(); }
       var go = document.getElementById('ob-go');
       if (go) go.removeAttribute('disabled');
     }
+  }
+})();
+</script>
+</body>
+</html>
