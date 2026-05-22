@@ -1330,32 +1330,35 @@ const DEMO = [
 
 async function loadAndRender() {
   const csvUrl = getSheetCsvUrl();
+
+  // No sheet connected — just show locally-added projects
   if (!csvUrl) {
-    sheetProjects = DEMO;
-    allProjects = [...addedProjects, ...sheetProjects];
-    document.getElementById('last-upd').textContent = 'Demo data';
+    sheetProjects = [];
+    allProjects = [...addedProjects];
     renderAll(); updateMetrics();
     enrichAllWithGitHub(allProjects);
-    if (!localStorage.getItem('nexus_setup_seen')) {
-      localStorage.setItem('nexus_setup_seen','1');
-      setTimeout(()=>openSetupDialog(false), 1200);
-    }
     return;
   }
+
+  // Sheet URL set — try to load it
   document.getElementById('grid').innerHTML = '<div class="loading"><div class="loading-spinner"></div><div>Loading projects…</div></div>';
   try {
     const sep = csvUrl.includes('?')?'&':'?';
     const res = await fetch(csvUrl+sep+'t='+Date.now());
-    if (!res.ok) throw new Error('Sheet returned '+res.status+' — check sharing settings');
+    if (!res.ok) throw new Error('status '+res.status);
     const csv = await res.text();
     sheetProjects = parseCSV(csv);
-    if (!sheetProjects.length) throw new Error('No rows found — check column headers match the template');
     allProjects = [...addedProjects, ...sheetProjects];
     document.getElementById('last-upd').textContent = 'Updated '+new Date().toLocaleTimeString();
     renderAll(); updateMetrics();
     enrichAllWithGitHub(allProjects);
   } catch(e) {
-    document.getElementById('grid').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Couldn't load sheet</div><div class="empty-sub">${e.message}</div><br><button class="btn primary" onclick="openSetupDialog(true)" style="margin:0 auto;display:block">Update sheet URL</button></div>`;
+    // Sheet failed — fall back to locally-added projects silently
+    sheetProjects = [];
+    allProjects = [...addedProjects];
+    document.getElementById('last-upd').textContent = 'Sheet unavailable';
+    renderAll(); updateMetrics();
+    enrichAllWithGitHub(allProjects);
   }
 }
 
@@ -1464,7 +1467,11 @@ function renderAll() {
 
   const grid = document.getElementById('grid');
   if (!filtered.length) {
-    grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">No projects found</div><div class="empty-sub">Try adjusting your filters or search.</div></div>`;
+    const noSheet = !getSheetCsvUrl();
+    const emptyMsg = (!query && activeTeam==='all' && activeStatus==='all' && noSheet)
+      ? `<div class="empty-state"><div class="empty-icon">🚀</div><div class="empty-title">No projects yet</div><div class="empty-sub">Hit <strong>+ Add Project</strong> to add your first repo.</div></div>`
+      : `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">No projects found</div><div class="empty-sub">Try adjusting your filters or search.</div></div>`;
+    grid.innerHTML = emptyMsg;
     return;
   }
   grid.innerHTML = filtered.map((p,i)=>renderCard(p,i)).join('');
