@@ -1017,7 +1017,7 @@ function saveToken() {
 // ADD PROJECT MODAL
 // ═══════════════════════════════════════════════════════════════════════════
 let fetchTimeout = null;
-let addedProjects = JSON.parse(localStorage.getItem('nexus_local_projects') || '[]');
+let addedProjects = []; // now stored in Supabase
 let currentFetchedGH = null;
 let addTeam = userProfile ? userProfile.team : '';
 let addStatus = 'active';
@@ -1212,16 +1212,18 @@ async function showPreviewFields(vals) {
   document.getElementById('btn-publish').disabled = false;
 }
 
-function publishProject() {
+async function publishProject() {
   const github_url = document.getElementById('url-input').value.trim();
   const name = document.getElementById('pf-name-input').value.trim();
   if (!name) return;
 
-  const project = {
-    _local: true,
-    _id: Date.now()+'',
+  const btn = document.getElementById('btn-publish');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  const row = {
+    created_by: supabaseUser ? supabaseUser.id : null,
     name,
-    owner: userProfile ? userProfile.name : 'You',
+    owner: userProfile ? userProfile.name : '',
     team: addTeam,
     status: addStatus,
     one_liner: document.getElementById('pf-oneliner-input').value.trim(),
@@ -1235,23 +1237,19 @@ function publishProject() {
     domain: '',
     client: '',
   };
-  if (currentFetchedGH) project._github = currentFetchedGH;
 
-  addedProjects.unshift(project);
-  localStorage.setItem('nexus_local_projects', JSON.stringify(addedProjects.slice(0,50)));
+  const { error } = await _sb.from('projects').insert([row]);
+  btn.textContent = 'Add to Nexus'; btn.disabled = false;
+  if (error) { alert('Could not save project: ' + error.message); return; }
   closeAddProject();
-  allProjects = [...addedProjects, ...sheetProjects];
-  renderAll();
-  updateMetrics();
+  loadAndRender();
 }
 
-function removeLocalProject(id) {
+async function removeLocalProject(id) {
   if (!confirm('Remove this project?')) return;
-  addedProjects = addedProjects.filter(p => p._id !== id);
-  localStorage.setItem('nexus_local_projects', JSON.stringify(addedProjects));
-  allProjects = [...addedProjects, ...sheetProjects];
-  renderAll();
-  updateMetrics();
+  const { error } = await _sb.from('projects').delete().eq('id', id);
+  if (error) { alert('Could not remove: ' + error.message); return; }
+  loadAndRender();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1284,51 +1282,45 @@ function parseCSV(csv) {
   }).filter(p=>p.name);
 }
 
-const DEMO = [
-  { name:'ALIS Automation Station', owner:'Russell Bran', team:'engineering', status:'active',
-    one_liner:'Playwright hub for bulk ALIS operations — med cart, staff access, role permissions',
-    description:'A local automation dashboard for ALIS. Upload an Excel template, click Run, and Playwright handles repetitive work headlessly while a live log streams to the browser.',
-    tags:'Playwright,Node.js,ALIS,Automation', domain:'Workflow Automation', tech_stack:'Node.js,Express,Socket.io,Playwright,ExcelJS',
-    github_url:'https://github.com/RussellBrb/ALIS-Automation', last_updated:'2026-05-14',
-    latest_update:'Update Role Permissions and Security Roles Converter shipped',
-    update_log:'2026-05-14 feat: Update Role Permissions shipped|2026-05-11 fix: Pharmacy reprocessing POST fix|2026-05-07 feat: Hub v2 visual console' },
-  { name:'QA Pipeline for Automations', owner:'Russell Bran', team:'engineering', status:'active',
-    one_liner:'Gate-based QA: Pre-QA Gate → Dry Run → Edge Cases → Env Validation → Sign-Off',
-    description:'Structured 5-stage QA pipeline for all ALIS automations. Tracks per-automation stage progress in qa-status.json.',
-    tags:'QA,Testing,Automation,Process', domain:'Workflow Automation', tech_stack:'Node.js,Playwright',
-    github_url:'', last_updated:'2026-05-15', latest_update:'Pipeline defined, qa-status.json live',
-    update_log:'2026-05-15 feat: QA pipeline skill and status JSON created' },
-  { name:'Client Onboarding Playbook', owner:'', team:'onboarding', status:'active',
-    one_liner:'Standardized onboarding workflow and checklist for new ALIS clients',
-    description:'Full onboarding lifecycle from contract signing through go-live. Includes configuration checklists, training materials, and handoff templates.',
-    tags:'Onboarding,Process,Documentation', domain:'Client Onboarding', tech_stack:'Google Workspace',
-    github_url:'', last_updated:'2026-05-12', latest_update:'Added med cart setup section',
-    update_log:'2026-05-12 update: Added med cart setup section|2026-05-08 feat: Initial playbook structure' },
-  { name:'Sales Demo Environment', owner:'', team:'sales', status:'planning',
-    one_liner:'Repeatable sandbox for ALIS sales demos pre-loaded with realistic data',
-    description:'A sandboxed ALIS environment pre-loaded with realistic demo data for sales demos. Includes scripted walkthrough flows for med cart, staff management, and reporting.',
-    tags:'Sales,Demo,ALIS', domain:'Sales Enablement', tech_stack:'ALIS',
-    github_url:'', last_updated:'2026-05-10', latest_update:'Scoping phase',
-    update_log:'2026-05-10 update: Scoping started' },
-  { name:'Nexus Project Hub', owner:'Russell Bran', team:'engineering', status:'active',
-    one_liner:'Central project hub for CS + Engineering with GitHub enrichment and similarity detection',
-    description:'A live team project hub. Connects to Google Sheets, enriches cards with GitHub data, and surfaces collaboration opportunities via similarity detection.',
-    tags:'Dashboard,Collaboration,Tools', domain:'Internal Tools', tech_stack:'HTML,JavaScript,GitHub API',
-    github_url:'', last_updated:'2026-05-22', latest_update:'Full redesign — onboarding, Add Project modal, live GitHub fetch',
-    update_log:'2026-05-22 feat: Full redesign with Add Project flow|2026-05-18 feat: Similarity engine v2' },
-  { name:'CS Automation Assessment Tool', owner:'', team:'customer success', status:'planning',
-    one_liner:'Helps CS quickly assess which automations are relevant for a client',
-    description:'Lightweight tool for CS to identify relevant automations during check-ins without needing engineering involvement each time.',
-    tags:'CS,Process,Assessment,Automation', domain:'Sales Enablement', tech_stack:'Google Workspace',
-    github_url:'', last_updated:'2026-05-08', latest_update:'Concept stage — gathering requirements',
-    update_log:'2026-05-08 note: Concept raised after sales call' },
-];
-
 async function loadAndRender() {
-  sheetProjects = [];
-  allProjects = [...addedProjects];
+  document.getElementById('grid').innerHTML = '<div class="loading"><div class="loading-spinner"></div><div>Loading projects…</div></div>';
+  const { data, error } = await _sb.from('projects').select('*').order('created_at', { ascending: false });
+  if (error) { console.error('Supabase load error:', error); allProjects = []; }
+  else {
+    allProjects = (data||[]).map(function(row) {
+      return {
+        _id: row.id,
+        _supabase: true,
+        _mine: supabaseUser && row.created_by === supabaseUser.id,
+        name: row.name || '',
+        github_url: row.github_url || '',
+        one_liner: row.one_liner || '',
+        description: row.description || '',
+        tags: row.tags || '',
+        domain: row.domain || '',
+        tech_stack: row.tech_stack || '',
+        team: row.team || '',
+        status: row.status || 'active',
+        owner: row.owner || '',
+        client: row.client || '',
+        last_updated: row.last_updated || '',
+        latest_update: row.latest_update || '',
+        update_log: row.update_log || '',
+      };
+    });
+  }
   renderAll(); updateMetrics();
   enrichAllWithGitHub(allProjects);
+
+  // Real-time subscription (set up once)
+  if (!window._realtimeSetup) {
+    window._realtimeSetup = true;
+    _sb.channel('projects-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, function() {
+        loadAndRender();
+      })
+      .subscribe();
+  }
 }
 
 function refresh() { ghCache={}; Object.keys(sessionStorage).filter(k=>k.startsWith('gh_')).forEach(k=>sessionStorage.removeItem(k)); loadAndRender(); }
@@ -1401,7 +1393,7 @@ function renderCard(p, idx) {
   const tags = (p.tags||'').split(',').filter(Boolean).slice(0,4);
   const tagHtml = tags.map(t=>`<span class="tag">${t.trim()}</span>`).join('');
   const ownerAv = p.owner ? `<div class="owner-av" style="background:${teamCol}22;color:${teamCol}">${ownerInitials(p.owner)}</div>` : '';
-  const localBadge = p._local ? `<div class="local-badge" onclick="event.stopPropagation();removeLocalProject('${p._id}')" title="Remove project">local ✕</div>` : '';
+  const localBadge = p._mine ? `<div class="local-badge" onclick="event.stopPropagation();removeLocalProject('${p._id}')" title="Remove project">local ✕</div>` : '';
 
   return `<div class="card ${teamClass(p.team)} stagger-${Math.min(idx+1,5)}" onclick="openDetail(${allProjects.indexOf(p)})">
     ${localBadge}
@@ -1563,7 +1555,7 @@ function openDetail(idx) {
 
   currentDetailProject = p;
   const delBtn = document.getElementById('so-delete-btn');
-  if (delBtn) delBtn.style.display = p._local ? 'block' : 'none';
+  if (delBtn) delBtn.style.display = p._mine ? 'block' : 'none';
   document.getElementById('slideover').classList.add('open');
   document.getElementById('so-overlay').classList.add('open');
 }
@@ -1576,19 +1568,18 @@ function closeDetail() {
 
 let currentDetailProject = null;
 
-function deleteCurrentProject() {
-  if (!currentDetailProject || !currentDetailProject._local) return;
+async function deleteCurrentProject() {
+  if (!currentDetailProject || !currentDetailProject._mine) return;
   if (!confirm('Remove "' + currentDetailProject.name + '" from Nexus?')) return;
-  addedProjects = addedProjects.filter(function(p) { return p._id !== currentDetailProject._id; });
-  localStorage.setItem('nexus_local_projects', JSON.stringify(addedProjects));
-  allProjects = [...addedProjects, ...sheetProjects];
+  const { error } = await _sb.from('projects').delete().eq('id', currentDetailProject._id);
+  if (error) { alert('Could not remove: ' + error.message); return; }
   closeDetail();
-  renderAll();
-  updateMetrics();
+  loadAndRender();
 }
 
 // ── Supabase boot ────────────────────────────────────────────────────────
 localStorage.removeItem('nexus_sheet_url'); // sheet feature disabled
+localStorage.removeItem('nexus_local_projects'); // migrated to Supabase
 // Fast path: if profile already in localStorage, hide onboarding immediately
 // without waiting for the async Supabase session check
 if (userProfile) { initProfile(); }
