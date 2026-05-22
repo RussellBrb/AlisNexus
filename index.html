@@ -1002,12 +1002,17 @@ async function enrichAllWithGitHub(projects) {
 }
 
 function closeTokenDialog() { document.getElementById('token-dialog').classList.remove('open'); }
-function saveToken() {
+async function saveToken() {
   const val = document.getElementById('token-input').value.trim();
   if (val) {
-    ghToken = val; localStorage.setItem('nexus_gh_token', val);
+    ghToken = val;
+    localStorage.setItem('nexus_gh_token', val);
     ghCache = {};
     Object.keys(sessionStorage).filter(k=>k.startsWith('gh_')).forEach(k=>sessionStorage.removeItem(k));
+    // Save to Supabase user metadata so it loads automatically on every login
+    if (supabaseUser) {
+      await _sb.auth.updateUser({ data: { gh_token: val } });
+    }
   }
   closeTokenDialog();
   enrichAllWithGitHub(allProjects);
@@ -1599,24 +1604,14 @@ if (userProfile) { initProfile(); }
       var nameEl = document.getElementById('ob-name');
           if (nameEl) nameEl.value = user.email.split('@')[0];
     }
+    // Restore GitHub token from Supabase metadata (set once, works on any device)
+    if (meta.gh_token && !ghToken) {
+      ghToken = meta.gh_token;
+      localStorage.setItem('nexus_gh_token', ghToken);
+    }
     initProfile();
     if (userProfile) loadAndRender();
     else {
       var go = document.getElementById('ob-go');
       if (go) go.removeAttribute('disabled');
     }
-  }
-
-  _sb.auth.onAuthStateChange(function(event, session) {
-    if (event === 'SIGNED_IN' && session) hideGateAndBoot(session.user);
-    else if (event === 'SIGNED_OUT') { localStorage.removeItem('nexus_profile'); location.reload(); }
-  });
-
-  const { data } = await _sb.auth.getSession();
-  if (data.session) {
-    hideGateAndBoot(data.session.user);
-  }
-})();
-</script>
-</body>
-</html>    
