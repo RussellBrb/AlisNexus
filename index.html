@@ -566,8 +566,14 @@ body {
     <p class="onboard-sub" style="margin-bottom:32px">ALIS Project Hub<br>Sign in with your company email.</p>
     <div id="login-form">
       <input class="onboard-input" id="login-email" type="email" placeholder="you@go-alis.com" autocomplete="email" style="text-align:left">
-      <button class="btn-go" onclick="sendMagicLink()">Send Magic Link →</button>
-      <p id="login-error" style="display:none;color:#f87171;font-size:13px;margin-top:14px"></p>
+      <div id="pw-section" style="display:none;margin-top:10px">
+        <input class="onboard-input" id="login-password" type="password" placeholder="Password" autocomplete="current-password" style="text-align:left">
+      </div>
+      <button class="btn-go" id="login-btn" onclick="handleLogin()">Send Magic Link →</button>
+      <p style="margin-top:14px">
+        <a href="#" id="toggle-pw-link" onclick="event.preventDefault();togglePasswordMode()" style="font-size:12px;color:var(--t3);text-decoration:none;border-bottom:1px solid var(--border)">Sign in with password instead</a>
+      </p>
+      <p id="login-error" style="display:none;color:#f87171;font-size:13px;margin-top:10px"></p>
     </div>
     <div id="login-sent" style="display:none">
       <div style="font-size:48px;margin-bottom:16px">✉️</div>
@@ -750,11 +756,11 @@ body {
 <div class="token-dialog" id="token-dialog">
   <div class="token-box">
     <h3>GitHub token</h3>
-    <p>Enter a personal access token to load private repositories. Public repos work without one. Stored for this session only.</p>
+    <p>Enter a personal access token to load private repositories. Public repos work without one. Saved to your account — you'll only need to do this once.</p>
     <input class="token-input" type="password" id="token-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
     <div class="token-actions">
       <button class="btn" onclick="closeTokenDialog()">Skip</button>
-      <button class="btn primary" onclick="saveToken()">Save for session</button>
+      <button class="btn primary" onclick="saveToken()">Save to account</button>
     </div>
   </div>
 </div>
@@ -788,6 +794,36 @@ const _sb = supabase.createClient(SUPA_URL, SUPA_KEY, {
 });
 let supabaseUser = null;
 
+let _pwMode = false;
+function togglePasswordMode() {
+  _pwMode = !_pwMode;
+  document.getElementById('pw-section').style.display = _pwMode ? 'block' : 'none';
+  document.getElementById('login-btn').textContent = _pwMode ? 'Sign In →' : 'Send Magic Link →';
+  document.getElementById('toggle-pw-link').textContent = _pwMode ? 'Send magic link instead' : 'Sign in with password instead';
+  document.getElementById('login-error').style.display = 'none';
+}
+function handleLogin() {
+  if (_pwMode) signInWithPassword();
+  else sendMagicLink();
+}
+async function signInWithPassword() {
+  const email = (document.getElementById('login-email').value||'').trim().toLowerCase();
+  const password = (document.getElementById('login-password').value||'');
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  if (!email || !password) { errEl.textContent = 'Please enter your email and password.'; errEl.style.display='block'; return; }
+  const domain = email.split('@')[1];
+  if (!ALLOWED_DOMAINS.includes(domain)) {
+    errEl.textContent = 'Access is restricted to @go-alis.com and @medtelligent.com emails.';
+    errEl.style.display = 'block'; return;
+  }
+  const btn = document.getElementById('login-btn');
+  btn.textContent = 'Signing in…'; btn.disabled = true;
+  const { error } = await _sb.auth.signInWithPassword({ email, password });
+  btn.textContent = 'Sign In →'; btn.disabled = false;
+  if (error) { errEl.textContent = error.message; errEl.style.display='block'; return; }
+  // onAuthStateChange will handle the rest
+}
 async function sendMagicLink() {
   const email = (document.getElementById('login-email').value||'').trim().toLowerCase();
   const errEl = document.getElementById('login-error');
@@ -798,7 +834,7 @@ async function sendMagicLink() {
     errEl.textContent = 'Access is restricted to @go-alis.com and @medtelligent.com emails.';
     errEl.style.display = 'block'; return;
   }
-  const btn = document.querySelector('#login-form .btn-go');
+  const btn = document.getElementById('login-btn');
   btn.textContent = 'Sending…'; btn.disabled = true;
   const { error } = await _sb.auth.signInWithOtp({
     email, options: { emailRedirectTo: 'https://russellbrb.github.io/AlisNexus' }
@@ -1032,7 +1068,10 @@ async function enrichAllWithGitHub(projects) {
     if (data) p._github = data;
   }));
   const hasPrivate = withGH.some(p=>p._github&&p._github._private);
-  if (hasPrivate && !ghToken) document.getElementById('token-dialog').classList.add('open');
+  // Only prompt if token isn't already saved (localStorage or Supabase metadata)
+  if (hasPrivate && !ghToken && !localStorage.getItem('nexus_gh_token')) {
+    document.getElementById('token-dialog').classList.add('open');
+  }
   document.getElementById('last-upd').textContent = 'Updated '+new Date().toLocaleTimeString()+' · live';
   renderAll();
 }
@@ -1699,7 +1738,6 @@ if (userProfile) { initProfile(); }
     }
   });
 
-  // On page load — check for existing session (persists across tabs/refreshes)
   const { data } = await _sb.auth.getSession();
   if (data.session) {
     hideGateAndBoot(data.session.user);
