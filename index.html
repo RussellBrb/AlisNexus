@@ -4,526 +4,43 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nexus — Project Hub</title>
-<style>
-/* ── Design tokens ──────────────────────────────────────────────────────── */
-:root {
-  --bg:       #06060f;
-  --s1:       #0c0c1d;
-  --s2:       #121228;
-  --s3:       #1a1a35;
-  --border:   rgba(255,255,255,0.06);
-  --border2:  rgba(255,255,255,0.10);
-  --accent:   #7c3aed;
-  --accent-l: #a78bfa;
-  --accent-g: rgba(124,58,237,0.18);
-  --grad:     linear-gradient(135deg,#7c3aed,#5b21b6);
-  --grad2:    linear-gradient(135deg,#a78bfa,#7c3aed);
-  /* teams */
-  --eng:  #6366f1;
-  --onb:  #059669;
-  --cs:   #db2777;
-  --sal:  #d97706;
-  --all:  #7c3aed;
-  /* status */
-  --active:   #10b981;
-  --planning: #f59e0b;
-  --paused:   #475569;
-  /* text */
-  --t1: #f1f5f9;
-  --t2: #94a3b8;
-  --t3: #475569;
-  --t4: #1e293b;
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
-  background: var(--bg);
-  color: var(--t1);
-  min-height: 100vh;
-  overflow-x: hidden;
-  background-image:
-    radial-gradient(ellipse 90% 40% at 50% 0%, rgba(124,58,237,0.12) 0%, transparent 65%);
-}
-
-/* ── Scrollbar ──────────────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--s3); border-radius: 4px; }
-
-/* ── Onboarding ─────────────────────────────────────────────────────────── */
-.onboard {
-  position: fixed; inset: 0; background: var(--bg); z-index: 1000;
-  display: flex; align-items: center; justify-content: center;
-  opacity: 1; transition: opacity .4s;
-}
-.onboard.hide { opacity: 0; pointer-events: none; }
-.onboard-box {
-  width: min(480px, 92vw);
-  animation: rise .5s ease both;
-}
-.onboard-logo {
-  font-size: 32px; font-weight: 800; letter-spacing: -1px;
-  background: var(--grad2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  margin-bottom: 6px;
-}
-.onboard-sub { font-size: 15px; color: var(--t2); margin-bottom: 40px; }
-.onboard-label { font-size: 12px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
-.onboard-input {
-  width: 100%; background: var(--s2); border: 1px solid var(--border2);
-  border-radius: 12px; padding: 14px 16px; font-size: 15px; color: var(--t1);
-  outline: none; margin-bottom: 28px; transition: border-color .2s;
-}
-.onboard-input:focus { border-color: var(--accent-l); }
-.onboard-input::placeholder { color: var(--t3); }
-.team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 32px; }
-.team-opt {
-  border: 1.5px solid var(--border2); border-radius: 12px; padding: 16px;
-  cursor: pointer; transition: all .2s; background: var(--s1);
-  display: flex; align-items: center; gap: 12px;
-}
-.team-opt:hover { border-color: var(--accent-l); background: var(--s2); }
-.team-opt.selected { border-color: var(--accent); background: var(--accent-g); }
-.team-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.team-opt-name { font-size: 13px; font-weight: 600; }
-.team-opt-desc { font-size: 11px; color: var(--t3); margin-top: 2px; }
-.btn-go {
-  width: 100%; padding: 14px; border-radius: 12px;
-  background: var(--grad); border: none; color: #fff;
-  font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity .2s;
-  letter-spacing: .01em;
-}
-.btn-go:hover { opacity: .88; }
-.btn-go:disabled { opacity: .35; cursor: default; }
-
-/* ── Header ─────────────────────────────────────────────────────────────── */
-.header {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(6,6,15,.85); backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-  padding: 0 24px; height: 58px;
-  display: flex; align-items: center; gap: 16px;
-}
-.logo {
-  font-size: 18px; font-weight: 800; letter-spacing: -.5px;
-  background: var(--grad2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  flex-shrink: 0;
-}
-.logo span { font-weight: 400; opacity: .5; }
-.search-wrap {
-  flex: 1; max-width: 380px; position: relative;
-  display: flex; align-items: center;
-}
-.search-icon { position: absolute; left: 12px; color: var(--t3); pointer-events: none; }
-.search {
-  width: 100%; background: var(--s1); border: 1px solid var(--border);
-  border-radius: 10px; padding: 8px 12px 8px 34px; font-size: 13px; color: var(--t1);
-  outline: none; transition: border-color .2s;
-}
-.search:focus { border-color: var(--accent-l); }
-.search::placeholder { color: var(--t3); }
-.header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-.last-upd { font-size: 11px; color: var(--t3); }
-
-.btn-add {
-  display: flex; align-items: center; gap: 6px;
-  background: var(--grad); border: none; border-radius: 10px;
-  color: #fff; font-size: 13px; font-weight: 600; padding: 8px 16px;
-  cursor: pointer; transition: opacity .15s; white-space: nowrap;
-}
-.btn-add:hover { opacity: .85; }
-
-.btn-sm {
-  background: var(--s2); border: 1px solid var(--border); border-radius: 8px;
-  color: var(--t2); font-size: 12px; padding: 6px 10px;
-  cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 5px;
-}
-.btn-sm:hover { border-color: var(--border2); color: var(--t1); }
-
-.avatar {
-  width: 32px; height: 32px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700; flex-shrink: 0; cursor: pointer;
-  border: 2px solid var(--border2); transition: border-color .2s;
-}
-.avatar:hover { border-color: var(--accent-l); }
-
-/* ── Hero ───────────────────────────────────────────────────────────────── */
-.hero {
-  padding: 28px 24px 0;
-  display: flex; align-items: flex-end; justify-content: space-between; gap: 20px;
-}
-.hero-greet h1 {
-  font-size: 26px; font-weight: 700; letter-spacing: -.5px; margin-bottom: 4px;
-}
-.hero-greet p { font-size: 14px; color: var(--t2); }
-.hero-metrics { display: flex; gap: 12px; }
-.metric {
-  background: var(--s1); border: 1px solid var(--border);
-  border-radius: 14px; padding: 14px 18px; text-align: right; min-width: 90px;
-}
-.metric-val { font-size: 26px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
-.metric-label { font-size: 11px; color: var(--t3); margin-top: 4px; text-transform: uppercase; letter-spacing: .06em; }
-.metric.pulse .metric-val { color: var(--active); }
-
-/* ── Filters ────────────────────────────────────────────────────────────── */
-.filters {
-  padding: 20px 24px 0;
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-}
-.filter-group { display: flex; gap: 6px; }
-.filter-divider { width: 1px; height: 20px; background: var(--border); margin: 0 4px; align-self: center; }
-.pill {
-  padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border);
-  font-size: 12px; font-weight: 500; cursor: pointer; transition: all .15s;
-  color: var(--t2); background: transparent; display: flex; align-items: center; gap: 6px;
-}
-.pill:hover { border-color: var(--border2); color: var(--t1); }
-.pill.active { color: #fff; border-color: transparent; }
-.pill .dot { width: 6px; height: 6px; border-radius: 50%; }
-
-/* ── Grid ───────────────────────────────────────────────────────────────── */
-.main { padding: 20px 24px 60px; }
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 14px;
-}
-
-/* ── Cards ──────────────────────────────────────────────────────────────── */
-.card {
-  background: var(--s1); border: 1px solid var(--border);
-  border-radius: 16px; padding: 20px; cursor: pointer;
-  transition: transform .2s ease, border-color .2s, box-shadow .2s;
-  position: relative; overflow: hidden;
-  animation: rise .35s ease both;
-}
-.card::before {
-  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-  width: 3px; border-radius: 16px 0 0 16px;
-}
-.card.team-engineering::before { background: var(--eng); }
-.card.team-onboarding::before { background: var(--onb); }
-.card.team-customer-success::before { background: var(--cs); }
-.card.team-sales::before { background: var(--sal); }
-
-.card:hover {
-  transform: translateY(-3px);
-  border-color: var(--border2);
-  box-shadow: 0 12px 40px rgba(0,0,0,.4), 0 0 0 1px rgba(124,58,237,0.08);
-}
-
-.card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
-.card-name { font-size: 15px; font-weight: 700; letter-spacing: -.2px; line-height: 1.3; padding-right: 8px; }
-.status-dot {
-  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px;
-}
-.status-dot.active { background: var(--active); box-shadow: 0 0 0 3px rgba(16,185,129,.2); }
-.status-dot.planning { background: var(--planning); }
-.status-dot.paused { background: var(--paused); }
-
-.card-one-liner { font-size: 12px; color: var(--t2); line-height: 1.5; margin-bottom: 12px; }
-
-.card-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
-.tag {
-  font-size: 10px; padding: 3px 8px; border-radius: 20px;
-  background: var(--s3); color: var(--t2); font-weight: 500;
-}
-
-/* GitHub bar */
-.gh-bar {
-  border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px;
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-}
-.gh-lang { font-size: 11px; display: flex; align-items: center; gap: 5px; color: var(--t2); }
-.lang-dot { width: 8px; height: 8px; border-radius: 50%; }
-.gh-commit { font-size: 11px; color: var(--t3); flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.gh-age { font-size: 11px; color: var(--t3); flex-shrink: 0; }
-.gh-loading { font-size: 11px; color: var(--t3); font-style: italic; }
-.gh-private { font-size: 11px; color: var(--planning); }
-
-.card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
-.owner-chip { display: flex; align-items: center; gap: 7px; }
-.owner-av { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; }
-.owner-name { font-size: 11px; color: var(--t2); }
-.team-badge {
-  font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 20px;
-  text-transform: uppercase; letter-spacing: .05em;
-}
-.card-date { font-size: 11px; color: var(--t3); }
-
-/* Local badge */
-.local-badge {
-  position: absolute; top: 10px; right: 12px;
-  font-size: 9px; padding: 2px 6px; border-radius: 20px;
-  background: var(--accent-g); color: var(--accent-l); font-weight: 600;
-}
-
-/* ── Loading / Empty ────────────────────────────────────────────────────── */
-.loading, .empty-state {
-  grid-column: 1/-1; text-align: center; padding: 80px 20px; color: var(--t3);
-}
-.loading-spinner {
-  width: 32px; height: 32px; border: 2px solid var(--border);
-  border-top-color: var(--accent); border-radius: 50%;
-  animation: spin .8s linear infinite; margin: 0 auto 16px;
-}
-.empty-icon { font-size: 40px; margin-bottom: 12px; }
-.empty-title { font-size: 16px; font-weight: 600; color: var(--t2); margin-bottom: 6px; }
-.empty-sub { font-size: 13px; line-height: 1.6; }
-
-/* ── Add Project Modal ──────────────────────────────────────────────────── */
-.modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,.7);
-  backdrop-filter: blur(8px); z-index: 500;
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0; pointer-events: none; transition: opacity .25s;
-}
-.modal-overlay.open { opacity: 1; pointer-events: all; }
-.modal {
-  background: var(--s1); border: 1px solid var(--border2);
-  border-radius: 20px; padding: 32px; width: min(540px, 92vw);
-  box-shadow: 0 32px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(124,58,237,0.12);
-  transform: translateY(20px); transition: transform .3s ease;
-  max-height: 90vh; overflow-y: auto;
-}
-.modal-overlay.open .modal { transform: translateY(0); }
-
-.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-.modal-title { font-size: 18px; font-weight: 700; }
-.modal-close { background: none; border: none; color: var(--t3); cursor: pointer; font-size: 18px; padding: 4px; transition: color .15s; }
-.modal-close:hover { color: var(--t1); }
-
-.url-zone {
-  background: var(--s2); border: 1.5px dashed var(--border2);
-  border-radius: 14px; padding: 20px; margin-bottom: 20px;
-  transition: border-color .2s;
-}
-.url-zone.fetching { border-color: var(--accent); border-style: solid; }
-.url-zone.done { border-color: var(--active); border-style: solid; }
-.url-label { font-size: 12px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
-.url-input {
-  width: 100%; background: transparent; border: none; outline: none;
-  font-size: 14px; color: var(--t1); font-family: 'Courier New', monospace;
-}
-.url-input::placeholder { color: var(--t3); font-family: inherit; }
-
-.fetch-status { margin-top: 10px; font-size: 12px; display: flex; align-items: center; gap: 8px; }
-.fetch-spinner {
-  width: 12px; height: 12px; border: 1.5px solid var(--border2);
-  border-top-color: var(--accent-l); border-radius: 50%;
-  animation: spin .7s linear infinite; flex-shrink: 0;
-}
-.fetch-ok { color: var(--active); font-weight: 500; }
-.fetch-err { color: #f87171; }
-.fetch-loading { color: var(--t2); }
-
-/* Auto-populated preview */
-.preview-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;
-}
-.preview-field { opacity: 0; transform: translateY(6px); transition: all .3s ease; }
-.preview-field.visible { opacity: 1; transform: none; }
-.preview-field.full { grid-column: 1/-1; }
-.field-label { font-size: 11px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 5px; }
-.field-input {
-  width: 100%; background: var(--s2); border: 1px solid var(--border);
-  border-radius: 10px; padding: 10px 12px; font-size: 13px; color: var(--t1);
-  outline: none; transition: border-color .2s;
-}
-.field-input:focus { border-color: var(--accent-l); }
-.field-input::placeholder { color: var(--t3); }
-
-/* Team & status selectors */
-.selector-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-.selector-opts { display: flex; gap: 6px; flex-wrap: wrap; }
-.sel-opt {
-  padding: 6px 12px; border-radius: 8px; border: 1.5px solid var(--border);
-  font-size: 12px; font-weight: 500; cursor: pointer; transition: all .15s;
-  color: var(--t2);
-}
-.sel-opt:hover { border-color: var(--border2); color: var(--t1); }
-.sel-opt.active { color: #fff; border-color: transparent; }
-
-.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
-.btn-cancel { background: var(--s2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 18px; font-size: 13px; color: var(--t2); cursor: pointer; transition: all .15s; }
-.btn-cancel:hover { color: var(--t1); }
-.btn-publish { background: var(--grad); border: none; border-radius: 10px; padding: 10px 22px; font-size: 13px; font-weight: 600; color: #fff; cursor: pointer; transition: opacity .15s; }
-.btn-publish:hover { opacity: .85; }
-.btn-publish:disabled { opacity: .3; cursor: default; }
-
-/* ── Slide-over detail ──────────────────────────────────────────────────── */
-.overlay { position: fixed; inset: 0; z-index: 200; opacity: 0; pointer-events: none; transition: opacity .25s; }
-.overlay.open { opacity: 1; pointer-events: all; }
-.slideover {
-  position: fixed; top: 0; right: -600px; width: min(560px, 95vw); height: 100vh;
-  background: var(--s1); border-left: 1px solid var(--border2);
-  z-index: 210; overflow-y: auto; transition: right .3s cubic-bezier(.4,0,.2,1);
-  box-shadow: -20px 0 60px rgba(0,0,0,.4);
-}
-.slideover.open { right: 0; }
-.so-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 20px 24px; border-bottom: 1px solid var(--border); position: sticky; top: 0;
-  background: var(--s1); z-index: 1;
-}
-.so-close { background: none; border: none; color: var(--t3); font-size: 18px; cursor: pointer; transition: color .15s; padding: 4px; }
-.so-close:hover { color: var(--t1); }
-.so-body { padding: 28px 24px; }
-.so-name { font-size: 24px; font-weight: 800; letter-spacing: -.5px; margin-bottom: 10px; }
-.so-badges { display: flex; gap: 8px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
-.so-section { margin-bottom: 28px; }
-.so-section-label { font-size: 11px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
-.so-desc { font-size: 13px; color: var(--t2); line-height: 1.7; }
-.so-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.so-detail-item label { font-size: 11px; color: var(--t3); display: block; margin-bottom: 3px; }
-.so-detail-item span { font-size: 13px; color: var(--t1); }
-.update-log { display: flex; flex-direction: column; gap: 10px; }
-.update-entry { display: flex; gap: 10px; align-items: flex-start; }
-.update-date { font-size: 11px; color: var(--t3); flex-shrink: 0; width: 42px; }
-.update-type {
-  font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
-  flex-shrink: 0; text-transform: uppercase; letter-spacing: .05em;
-}
-.update-type.feat { background: rgba(99,102,241,.2); color: #818cf8; }
-.update-type.fix { background: rgba(251,191,36,.15); color: #fbbf24; }
-.update-type.update { background: rgba(148,163,184,.1); color: #94a3b8; }
-.update-type.note { background: rgba(148,163,184,.1); color: #94a3b8; }
-.update-text { font-size: 12px; color: var(--t2); line-height: 1.5; }
-.commits-list { display: flex; flex-direction: column; gap: 8px; }
-.commit-row { display: flex; gap: 10px; align-items: flex-start; }
-.commit-sha { font-family: 'Courier New', monospace; font-size: 11px; color: var(--accent-l); flex-shrink: 0; }
-.commit-msg { font-size: 12px; color: var(--t2); flex: 1; }
-.commit-date { font-size: 11px; color: var(--t3); flex-shrink: 0; }
-.similar-list { display: flex; flex-direction: column; gap: 8px; }
-.similar-card {
-  background: var(--s2); border: 1px solid var(--border); border-radius: 12px;
-  padding: 12px 14px; cursor: pointer; transition: border-color .15s;
-  border-left: 3px solid var(--accent);
-}
-.similar-card:hover { border-color: var(--accent-l); }
-.similar-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-.similar-name { font-size: 13px; font-weight: 600; }
-.similar-score { font-size: 12px; color: var(--accent-l); font-weight: 600; }
-.similar-reasons { font-size: 11px; color: var(--t3); }
-.gh-link { display: flex; align-items: center; gap: 8px; color: var(--t2); font-size: 13px; padding: 10px 14px; background: var(--s2); border-radius: 10px; text-decoration: none; border: 1px solid var(--border); transition: border-color .15s; }
-.gh-link:hover { border-color: var(--border2); color: var(--t1); }
-
-/* ── Token dialog ───────────────────────────────────────────────────────── */
-.token-dialog {
-  position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 600;
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0; pointer-events: none; transition: opacity .2s;
-}
-.token-dialog.open { opacity: 1; pointer-events: all; }
-.token-box {
-  background: var(--s1); border: 1px solid var(--border2); border-radius: 18px;
-  padding: 30px; width: min(420px, 90vw); box-shadow: 0 24px 60px rgba(0,0,0,.4);
-}
-.token-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
-.token-box p { font-size: 13px; color: var(--t2); margin-bottom: 18px; line-height: 1.6; }
-.token-input {
-  width: 100%; background: var(--s2); border: 1px solid var(--border);
-  border-radius: 10px; padding: 11px 14px; font-size: 13px; color: var(--t1);
-  outline: none; margin-bottom: 14px; font-family: 'Courier New', monospace;
-}
-.token-input:focus { border-color: var(--accent-l); }
-.token-actions { display: flex; gap: 8px; justify-content: flex-end; }
-
-/* ── Sheet setup ────────────────────────────────────────────────────────── */
-.setup-dialog {
-  position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 700;
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0; pointer-events: none; transition: opacity .25s;
-}
-.setup-dialog.open { opacity: 1; pointer-events: all; }
-.setup-box {
-  background: var(--s1); border: 1px solid var(--border2);
-  border-radius: 20px; padding: 36px; width: min(480px, 92vw);
-  box-shadow: 0 32px 80px rgba(0,0,0,.5);
-}
-.setup-box h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
-.setup-sub { font-size: 13px; color: var(--t2); margin-bottom: 24px; line-height: 1.6; }
-.setup-steps { list-style: none; margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
-.setup-steps li { display: flex; gap: 10px; font-size: 13px; color: var(--t2); line-height: 1.5; }
-.step-num { flex-shrink:0; width:20px; height:20px; border-radius:50%; background:var(--accent); color:#fff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-top:1px; }
-.setup-url-input {
-  width: 100%; background: var(--s2); border: 1px solid var(--border);
-  border-radius: 10px; padding: 11px 14px; font-size: 13px; color: var(--t1);
-  outline: none; margin-bottom: 8px; transition: border-color .2s;
-}
-.setup-url-input:focus { border-color: var(--accent-l); }
-.setup-url-input::placeholder { color: var(--t3); }
-.setup-hint { font-size: 11px; color: var(--t3); margin-bottom: 20px; }
-.setup-actions { display: flex; gap: 10px; justify-content: flex-end; align-items: center; }
-.setup-skip { font-size: 12px; color: var(--t3); cursor: pointer; margin-right: auto; }
-.setup-skip:hover { color: var(--t2); }
-
-/* ── General buttons ────────────────────────────────────────────────────── */
-.btn { background: var(--s2); border: 1px solid var(--border); border-radius: 8px; color: var(--t2); font-size: 13px; padding: 8px 14px; cursor: pointer; transition: all .15s; }
-.btn:hover { color: var(--t1); border-color: var(--border2); }
-.btn.primary { background: var(--grad); border: none; color: #fff; font-weight: 600; }
-.btn.primary:hover { opacity: .88; }
-
-/* ── Language tag selector ──────────────────────────────────────────────── */
-.lang-tag-wrap {
-  background: var(--s2); border: 1px solid var(--border);
-  border-radius: 10px; padding: 8px 10px; transition: border-color .2s; position: relative;
-}
-.lang-tag-wrap:focus-within { border-color: var(--accent-l); }
-.lang-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 4px; min-height: 0; }
-.lang-tags:empty { margin-bottom: 0; }
-.lang-pill {
-  display: flex; align-items: center; gap: 5px;
-  background: var(--s3); border-radius: 6px; padding: 3px 8px 3px 6px;
-  font-size: 12px; color: var(--t1); font-weight: 500;
-}
-.lang-pill .lang-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.lang-pill .lang-pct { font-size: 10px; color: var(--t3); }
-.lang-pill .lang-remove { background: none; border: none; color: var(--t3); cursor: pointer; font-size: 13px; line-height: 1; padding: 0 0 0 2px; transition: color .15s; }
-.lang-pill .lang-remove:hover { color: var(--t1); }
-.lang-input-row { display: flex; align-items: center; }
-.lang-search {
-  background: none; border: none; outline: none; font-size: 13px;
-  color: var(--t1); width: 100%; min-width: 120px;
-}
-.lang-search::placeholder { color: var(--t3); }
-.lang-suggestions {
-  position: absolute; left: 0; right: 0; top: calc(100% + 4px);
-  background: var(--s2); border: 1px solid var(--border2); border-radius: 10px;
-  overflow: hidden; z-index: 50; display: none; box-shadow: 0 8px 24px rgba(0,0,0,.4);
-}
-.lang-suggestions.show { display: block; }
-.lang-sug-item {
-  display: flex; align-items: center; gap: 8px; padding: 9px 12px;
-  cursor: pointer; font-size: 13px; transition: background .1s;
-}
-.lang-sug-item:hover, .lang-sug-item.focused { background: var(--s3); }
-.lang-sug-item .sug-dot { width: 8px; height: 8px; border-radius: 50%; }
-.lang-sug-item .sug-pct { margin-left: auto; font-size: 11px; color: var(--t3); }
-
-/* ── Animations ─────────────────────────────────────────────────────────── */
-@keyframes rise { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
-
-.stagger-1 { animation-delay: .05s; }
-.stagger-2 { animation-delay: .10s; }
-.stagger-3 { animation-delay: .15s; }
-.stagger-4 { animation-delay: .20s; }
-.stagger-5 { animation-delay: .25s; }
-
-/* ── Responsive ─────────────────────────────────────────────────────────── */
-@media (max-width: 640px) {
-  .hero { flex-direction: column; align-items: flex-start; }
-  .hero-metrics { flex-wrap: wrap; }
-  .header { gap: 10px; }
-  .last-upd { display: none; }
-}
-</style>
+<link rel="stylesheet" href="nexus.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
+<!-- ── Login Gate ─────────────────────────────────────────────────────────── -->
+<div class="login-gate" id="login-gate">
+  <div class="onboard-box" style="text-align:center">
+    <div class="onboard-logo">Nexus</div>
+    <p class="onboard-sub" style="margin-bottom:32px">ALIS Project Hub<br>Sign in with your company email.</p>
+    <div id="login-form">
+      <input class="onboard-input" id="login-email" type="email"
+             placeholder="you@go-alis.com" autocomplete="email" style="text-align:left">
+      <div id="pw-section" style="display:none;margin-top:10px">
+        <input class="onboard-input" id="login-password" type="password"
+               placeholder="Password" autocomplete="current-password" style="text-align:left">
+      </div>
+      <button class="btn-go" id="login-btn" onclick="handleLogin()">Send Magic Link →</button>
+      <p style="margin-top:14px">
+        <a href="#" id="toggle-pw-link"
+           onclick="event.preventDefault();togglePasswordMode()"
+           style="font-size:12px;color:var(--t3);text-decoration:none;border-bottom:1px solid var(--border)">
+          Sign in with password instead
+        </a>
+      </p>
+      <p id="login-error" style="display:none;color:#f87171;font-size:13px;margin-top:10px"></p>
+    </div>
+    <div id="login-sent" style="display:none">
+      <div style="font-size:48px;margin-bottom:16px">✉️</div>
+      <p style="color:var(--t1);font-size:16px;font-weight:600;margin-bottom:8px">Check your email</p>
+      <p style="color:var(--t2);font-size:13px">
+        Magic link sent to <strong id="login-sent-email" style="color:var(--accent-l)"></strong>
+        <br><br>Click the link in the email to sign in.
+      </p>
+    </div>
+  </div>
+</div>
 
 <!-- ── Onboarding ──────────────────────────────────────────────────────────── -->
 <div class="onboard" id="onboard">
@@ -532,29 +49,34 @@ body {
     <p class="onboard-sub">Your team's project hub. Let's get you set up.</p>
 
     <div class="onboard-label">What's your name?</div>
-    <input class="onboard-input" id="ob-name" type="text" placeholder="e.g. Russell Bran" autocomplete="off">
+    <input class="onboard-input" id="ob-name" type="text"
+           placeholder="e.g. Russell Bran" autocomplete="off">
 
     <div class="onboard-label">Which team are you on?</div>
     <div class="team-grid" id="ob-teams">
-      <div class="team-opt" data-team="engineering" onclick="selectTeam(this)">
+      <label class="team-opt" for="team-engineering">
+        <input type="radio" id="team-engineering" name="team" value="engineering">
         <div class="team-dot" style="background:var(--eng)"></div>
         <div><div class="team-opt-name">Engineering</div><div class="team-opt-desc">Dev, automation, infra</div></div>
-      </div>
-      <div class="team-opt" data-team="onboarding" onclick="selectTeam(this)">
+      </label>
+      <label class="team-opt" for="team-onboarding">
+        <input type="radio" id="team-onboarding" name="team" value="onboarding">
         <div class="team-dot" style="background:var(--onb)"></div>
-        <div><div class="team-opt-name">Onboarding</div><div class="team-opt-desc">Client setup & go-live</div></div>
-      </div>
-      <div class="team-opt" data-team="customer success" onclick="selectTeam(this)">
+        <div><div class="team-opt-name">Onboarding</div><div class="team-opt-desc">Client setup &amp; go-live</div></div>
+      </label>
+      <label class="team-opt" for="team-cs">
+        <input type="radio" id="team-cs" name="team" value="customer success">
         <div class="team-dot" style="background:var(--cs)"></div>
-        <div><div class="team-opt-name">Customer Success</div><div class="team-opt-desc">Retention & support</div></div>
-      </div>
-      <div class="team-opt" data-team="sales" onclick="selectTeam(this)">
+        <div><div class="team-opt-name">Customer Success</div><div class="team-opt-desc">Retention &amp; support</div></div>
+      </label>
+      <label class="team-opt" for="team-sales">
+        <input type="radio" id="team-sales" name="team" value="sales">
         <div class="team-dot" style="background:var(--sal)"></div>
-        <div><div class="team-opt-name">Sales</div><div class="team-opt-desc">Discovery & closing</div></div>
-      </div>
+        <div><div class="team-opt-name">Sales</div><div class="team-opt-desc">Discovery &amp; closing</div></div>
+      </label>
     </div>
 
-    <button class="btn-go" id="ob-go" disabled onclick="completeOnboard()">Enter Nexus →</button>
+    <button class="btn-go" id="ob-go" onclick="completeOnboard()">Enter Nexus →</button>
   </div>
 </div>
 
@@ -562,26 +84,40 @@ body {
 <header class="header">
   <div class="logo">Nexus <span>/ Project Hub</span></div>
   <div class="search-wrap">
-    <svg class="search-icon" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <svg class="search-icon" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
     <input class="search" id="search-input" type="text" placeholder="Search projects…">
   </div>
   <div class="header-right">
     <span class="last-upd" id="last-upd"></span>
-    <button class="btn-sm" onclick="openSetupDialog(true)">
-      <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M10.3 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l4 4v3.3"/><path d="M15 18h6m-3-3v6"/></svg>
-      Data source
-    </button>
     <button class="btn-sm" onclick="refresh()">
-      <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+      <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+        <path d="M21 3v5h-5"/>
+        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+        <path d="M3 21v-5h5"/>
+      </svg>
       Refresh
     </button>
     <button class="btn-add" onclick="openAddProject()">
-      <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14m-7-7h14"/></svg>
+      <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path d="M12 5v14m-7-7h14"/>
+      </svg>
       Add Project
     </button>
-    <div class="avatar" id="user-avatar" onclick="openSetupDialog(false)" title="Profile"></div>
+    <div class="avatar" id="user-avatar" onclick="toggleAvatarMenu()" title="Account"></div>
   </div>
 </header>
+
+<!-- ── Avatar dropdown ────────────────────────────────────────────────────── -->
+<div class="avatar-menu" id="avatar-menu">
+  <div class="avatar-menu-info">
+    <div class="avatar-menu-name"  id="avatar-menu-name"></div>
+    <div class="avatar-menu-email" id="avatar-menu-email"></div>
+  </div>
+  <button class="avatar-menu-btn danger" onclick="signOut();closeAvatarMenu()">→ Sign out</button>
+</div>
 
 <!-- ── Hero ───────────────────────────────────────────────────────────────── -->
 <div class="hero" id="hero">
@@ -592,10 +128,26 @@ body {
   <div class="hero-metrics" id="hero-metrics"></div>
 </div>
 
+<!-- ── Pulse feed ──────────────────────────────────────────────────────────── -->
+<div class="pulse-section" id="pulse-section">
+  <div class="pulse-header">
+    <div class="pulse-title">
+      <span class="pulse-title-dot"></span>
+      Network Activity
+    </div>
+  </div>
+  <div class="pulse-wrap" id="pulse-wrap">
+    <div class="pulse-empty"><span class="pulse-empty-icon">◎</span><span>Loading activity…</span></div>
+  </div>
+</div>
+
 <!-- ── Filters ────────────────────────────────────────────────────────────── -->
 <div class="filters" id="filters"></div>
 
-<!-- ── Grid ───────────────────────────────────────────────────────────────── -->
+<!-- ── Contributor chips ──────────────────────────────────────────────────── -->
+<div class="contributors-row" id="contrib-row"></div>
+
+<!-- ── Project grid ───────────────────────────────────────────────────────── -->
 <main class="main">
   <div class="grid" id="grid">
     <div class="loading"><div class="loading-spinner"></div><div>Loading projects…</div></div>
@@ -609,13 +161,12 @@ body {
       <div class="modal-title">Add a project</div>
       <button class="modal-close" onclick="closeAddProject()">✕</button>
     </div>
-
     <div class="url-zone" id="url-zone">
       <div class="url-label">GitHub URL</div>
-      <input class="url-input" id="url-input" type="text" placeholder="https://github.com/org/repo" autocomplete="off">
+      <input class="url-input" id="url-input" type="text"
+             placeholder="https://github.com/org/repo" autocomplete="off">
       <div class="fetch-status" id="fetch-status" style="display:none"></div>
     </div>
-
     <div id="preview-section" style="display:none">
       <div class="preview-grid">
         <div class="preview-field full" id="pf-name">
@@ -635,7 +186,8 @@ body {
           <div class="lang-tag-wrap" id="lang-tag-wrap">
             <div class="lang-tags" id="lang-tags"></div>
             <div class="lang-input-row">
-              <input class="lang-search" id="lang-search" type="text" placeholder="Type to add a language…" autocomplete="off">
+              <input class="lang-search" id="lang-search" type="text"
+                     placeholder="Type to add a language…" autocomplete="off">
             </div>
             <div class="lang-suggestions" id="lang-suggestions"></div>
           </div>
@@ -644,29 +196,31 @@ body {
           <div class="field-label">Tags</div>
           <input class="field-input" id="pf-tags-input" type="text" placeholder="comma, separated">
         </div>
+        <div class="preview-field full" id="pf-deploy">
+          <div class="field-label">Live URL <span style="color:var(--t3);font-weight:400;text-transform:none;letter-spacing:0">(optional — makes "Try it →" appear)</span></div>
+          <input class="field-input" id="pf-deploy-input" type="url" placeholder="https://your-tool.com">
+        </div>
       </div>
-
       <div class="selector-row">
         <div>
           <div class="field-label" style="margin-bottom:8px">Team</div>
           <div class="selector-opts" id="team-sel">
-            <div class="sel-opt" data-val="engineering" onclick="selTeam(this)" style="--tc:var(--eng)">Engineering</div>
-            <div class="sel-opt" data-val="onboarding" onclick="selTeam(this)" style="--tc:var(--onb)">Onboarding</div>
-            <div class="sel-opt" data-val="customer success" onclick="selTeam(this)" style="--tc:var(--cs)">CS</div>
-            <div class="sel-opt" data-val="sales" onclick="selTeam(this)" style="--tc:var(--sal)">Sales</div>
+            <div class="sel-opt" data-val="engineering"      onclick="selTeam(this)">Engineering</div>
+            <div class="sel-opt" data-val="onboarding"       onclick="selTeam(this)">Onboarding</div>
+            <div class="sel-opt" data-val="customer success" onclick="selTeam(this)">CS</div>
+            <div class="sel-opt" data-val="sales"            onclick="selTeam(this)">Sales</div>
           </div>
         </div>
         <div>
           <div class="field-label" style="margin-bottom:8px">Status</div>
           <div class="selector-opts" id="status-sel">
-            <div class="sel-opt" data-val="active" onclick="selStatus(this)">Active</div>
+            <div class="sel-opt" data-val="active"   onclick="selStatus(this)">Active</div>
             <div class="sel-opt" data-val="planning" onclick="selStatus(this)">Planning</div>
-            <div class="sel-opt" data-val="paused" onclick="selStatus(this)">Paused</div>
+            <div class="sel-opt" data-val="paused"   onclick="selStatus(this)">Paused</div>
           </div>
         </div>
       </div>
     </div>
-
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeAddProject()">Cancel</button>
       <button class="btn-publish" id="btn-publish" onclick="publishProject()" disabled>Add to Nexus</button>
@@ -674,12 +228,15 @@ body {
   </div>
 </div>
 
-<!-- ── Slide-over ─────────────────────────────────────────────────────────── -->
+<!-- ── Slide-over detail ───────────────────────────────────────────────────── -->
 <div class="overlay" id="overlay" onclick="closeDetail()"></div>
 <div class="slideover" id="slideover">
   <div class="so-header">
     <div style="font-size:12px;color:var(--t3)" id="so-breadcrumb">Project</div>
-    <button class="so-close" onclick="closeDetail()">✕</button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button id="so-delete-btn" style="display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;color:#f87171;font-size:12px;padding:5px 10px;cursor:pointer" onclick="deleteCurrentProject()">Remove</button>
+      <button class="so-close" onclick="closeDetail()">✕</button>
+    </div>
   </div>
   <div class="so-body" id="so-body"></div>
 </div>
@@ -688,820 +245,26 @@ body {
 <div class="token-dialog" id="token-dialog">
   <div class="token-box">
     <h3>GitHub token</h3>
-    <p>Enter a personal access token to load private repositories. Public repos work without one. Stored for this session only.</p>
+    <p>Enter a personal access token to load private repositories. Public repos work without one. Saved to your account — you'll only need to do this once.</p>
     <input class="token-input" type="password" id="token-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
     <div class="token-actions">
       <button class="btn" onclick="closeTokenDialog()">Skip</button>
-      <button class="btn primary" onclick="saveToken()">Save for session</button>
+      <button class="btn primary" onclick="saveToken()">Save to account</button>
     </div>
   </div>
 </div>
 
-<!-- ── Sheet Setup Dialog ─────────────────────────────────────────────────── -->
-<div class="setup-dialog" id="setup-dialog">
-  <div class="setup-box">
-    <h2>Connect your project sheet</h2>
-    <p class="setup-sub">Paste your Google Sheets URL. Nexus handles the rest — no CSV exports, no config files needed.</p>
-    <ol class="setup-steps">
-      <li><span class="step-num">1</span><span>Open your Google Sheet → <strong>Share</strong> → set to <strong>Anyone with the link</strong></span></li>
-      <li><span class="step-num">2</span><span>Copy the URL from your browser and paste it below</span></li>
-    </ol>
-    <input class="setup-url-input" type="text" id="setup-url-input" placeholder="https://docs.google.com/spreadsheets/d/…">
-    <p class="setup-hint">Works with any standard Google Sheets share link.</p>
-    <div class="setup-actions">
-      <span class="setup-skip" onclick="closeSetupDialog()">Use demo data</span>
-      <button class="btn" onclick="closeSetupDialog()">Cancel</button>
-      <button class="btn primary" onclick="saveSheetUrl()">Connect sheet</button>
-    </div>
-  </div>
-</div>
+<!-- ── Scripts — loaded in dependency order ───────────────────────────────── -->
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/github.js"></script>
+<script src="js/similarity.js"></script>
+<script src="js/data.js"></script>
+<script src="js/render.js"></script>
+<script src="js/detail.js"></script>
+<script src="js/modal.js"></script>
+<script src="js/pulse.js"></script>
+<script src="js/app.js"></script>
 
-<script>
-// ═══════════════════════════════════════════════════════════════════════════
-// USER PROFILE
-// ═══════════════════════════════════════════════════════════════════════════
-const TEAM_COLORS = {
-  'engineering': 'var(--eng)',
-  'onboarding': 'var(--onb)',
-  'customer success': 'var(--cs)',
-  'sales': 'var(--sal)',
-};
-const TEAM_LABELS = {
-  'engineering': 'Engineering',
-  'onboarding': 'Onboarding',
-  'customer success': 'Customer Success',
-  'sales': 'Sales',
-};
-
-let userProfile = JSON.parse(localStorage.getItem('nexus_profile') || 'null');
-
-function initProfile() {
-  if (userProfile) {
-    document.getElementById('onboard').classList.add('hide');
-    setTimeout(() => document.getElementById('onboard').style.display = 'none', 400);
-    applyProfile();
-  }
-  // else: onboarding shows
-}
-
-function applyProfile() {
-  if (!userProfile) return;
-  const av = document.getElementById('user-avatar');
-  const initials = userProfile.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
-  const col = TEAM_COLORS[userProfile.team] || 'var(--accent)';
-  av.textContent = initials;
-  av.style.background = col + '22';
-  av.style.color = col;
-  av.style.borderColor = col + '44';
-
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  const firstName = userProfile.name.split(' ')[0];
-  document.getElementById('greeting').textContent = greeting + ', ' + firstName + '.';
-  document.getElementById('hero-sub').textContent = "Here's what your team is building.";
-
-  // Pre-select their team in add modal
-  document.querySelectorAll('#team-sel .sel-opt').forEach(el => {
-    if (el.dataset.val === userProfile.team) selTeam(el);
-  });
-}
-
-let selectedTeam = '';
-function selectTeam(el) {
-  document.querySelectorAll('.team-opt').forEach(e => e.classList.remove('selected'));
-  el.classList.add('selected');
-  selectedTeam = el.dataset.team;
-  validateOnboard();
-}
-function validateOnboard() {
-  const name = document.getElementById('ob-name').value.trim();
-  document.getElementById('ob-go').disabled = !(name && selectedTeam);
-}
-document.getElementById('ob-name').addEventListener('input', validateOnboard);
-
-function completeOnboard() {
-  const name = document.getElementById('ob-name').value.trim();
-  userProfile = { name, team: selectedTeam };
-  localStorage.setItem('nexus_profile', JSON.stringify(userProfile));
-  document.getElementById('onboard').classList.add('hide');
-  setTimeout(() => document.getElementById('onboard').style.display = 'none', 400);
-  applyProfile();
-  loadAndRender();
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// SHEET CONFIG
-// ═══════════════════════════════════════════════════════════════════════════
-function sheetUrlToCsv(url) {
-  if (!url) return '';
-  url = url.trim();
-  if (url.includes('/export?format=csv') || url.includes('output=csv')) return url;
-  const m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-  if (m) return 'https://docs.google.com/spreadsheets/d/' + m[1] + '/export?format=csv&gid=0';
-  return url;
-}
-function getSheetCsvUrl() { return localStorage.getItem('nexus_sheet_url') || ''; }
-function openSetupDialog(isEdit) {
-  document.getElementById('setup-url-input').value = localStorage.getItem('nexus_sheet_url') || '';
-  document.getElementById('setup-dialog').classList.add('open');
-}
-function closeSetupDialog() { document.getElementById('setup-dialog').classList.remove('open'); }
-function saveSheetUrl() {
-  const raw = document.getElementById('setup-url-input').value.trim();
-  if (!raw) return;
-  localStorage.setItem('nexus_sheet_url', sheetUrlToCsv(raw));
-  closeSetupDialog();
-  loadAndRender();
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// SIMILARITY ENGINE
-// ═══════════════════════════════════════════════════════════════════════════
-const STOPWORDS = new Set(['the','a','an','is','it','in','on','at','to','for','of','and','or','but','with','has','had','have','was','are','be','been','will','would','could','should','may','might','this','that','from','into','about','after','before','through','during']);
-
-function tokenize(text) {
-  if (!text) return new Set();
-  return new Set(text.toLowerCase().split(/[\s,.\-_\/()]+/).filter(w => w.length > 3 && !STOPWORDS.has(w)));
-}
-function jaccard(a, b) {
-  if (!a.size && !b.size) return 0;
-  const inter = new Set([...a].filter(x => b.has(x)));
-  const union = new Set([...a, ...b]);
-  return inter.size / union.size;
-}
-function computeSimilarity(p, q) {
-  const reasons = []; let score = 0;
-  const tagsP = new Set((p.tags||'').split(',').map(t=>t.trim().toLowerCase()).filter(Boolean));
-  const tagsQ = new Set((q.tags||'').split(',').map(t=>t.trim().toLowerCase()).filter(Boolean));
-  const sharedTags = [...tagsP].filter(t => tagsQ.has(t));
-  if (sharedTags.length) { score += 0.4*jaccard(tagsP,tagsQ); reasons.push('shared tags: '+sharedTags.slice(0,3).join(', ')); }
-  if (p.domain && q.domain && p.domain.toLowerCase()===q.domain.toLowerCase()) { score+=0.3; reasons.push('same domain: '+p.domain); }
-  const sP = new Set((p.tech_stack||'').split(',').map(t=>t.trim().toLowerCase()).filter(Boolean));
-  const sQ = new Set((q.tech_stack||'').split(',').map(t=>t.trim().toLowerCase()).filter(Boolean));
-  const sharedStack = [...sP].filter(t=>sQ.has(t));
-  if (sharedStack.length) { score+=0.2*jaccard(sP,sQ); reasons.push('shared tech: '+sharedStack.slice(0,2).join(', ')); }
-  const kwP = tokenize((p.description||'')+' '+(p.one_liner||''));
-  const kwQ = tokenize((q.description||'')+' '+(q.one_liner||''));
-  const kwSim = jaccard(kwP, kwQ);
-  if (kwSim>0.08) score += 0.1*kwSim;
-  return { score: Math.round(score*100), reasons: reasons.slice(0,2) };
-}
-function getSimilar(project, all, limit=4) {
-  return all.filter(p=>p!==project && p.status!=='archived')
-    .map(p=>({project:p,...computeSimilarity(project,p)}))
-    .filter(r=>r.score>12).sort((a,b)=>b.score-a.score).slice(0,limit);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// GITHUB ENRICHMENT
-// ═══════════════════════════════════════════════════════════════════════════
-var ghCache = {};
-var ghToken = sessionStorage.getItem('nexus_gh_token') || '';
-
-function ghHeaders() {
-  const h = { 'Accept': 'application/vnd.github.v3+json' };
-  if (ghToken) h['Authorization'] = 'token ' + ghToken;
-  return h;
-}
-function parseGHUrl(url) {
-  if (!url) return null;
-  const m = url.match(/github\.com\/([^\/\s]+)\/([^\/\s#?]+)/);
-  if (!m) return null;
-  return { owner: m[1], repo: m[2].replace(/\.git$/,'') };
-}
-async function fetchRepoData(owner, repo) {
-  const key = owner+'/'+repo;
-  if (ghCache[key]) return ghCache[key];
-  const cached = sessionStorage.getItem('gh_'+key);
-  if (cached) { try { ghCache[key]=JSON.parse(cached); return ghCache[key]; } catch(e){} }
-  try {
-    const [repoRes, commitsRes, langsRes] = await Promise.all([
-      fetch('https://api.github.com/repos/'+key, {headers:ghHeaders()}),
-      fetch('https://api.github.com/repos/'+key+'/commits?per_page=8', {headers:ghHeaders()}),
-      fetch('https://api.github.com/repos/'+key+'/languages', {headers:ghHeaders()}),
-    ]);
-    if (!repoRes.ok) {
-      if (repoRes.status===403) return { _rateLimit: true };
-      if (repoRes.status===404 && !ghToken) return { _private: true };
-      return null;
-    }
-    const repoData = await repoRes.json();
-    const commits = commitsRes.ok ? await commitsRes.json() : [];
-    const langsRaw = langsRes.ok ? await langsRes.json() : {};
-    const totalBytes = Object.values(langsRaw).reduce((s,v)=>s+v,0);
-    const languages = Object.entries(langsRaw)
-      .sort((a,b)=>b[1]-a[1])
-      .map(([lang,bytes])=>({ lang, pct: totalBytes ? Math.round(bytes/totalBytes*10)/10 : 0 }));
-    const enriched = {
-      language: repoData.language, description: repoData.description,
-      languages,
-      topics: repoData.topics||[], stars: repoData.stargazers_count,
-      open_issues: repoData.open_issues_count, pushed_at: repoData.pushed_at,
-      default_branch: repoData.default_branch,
-      commits: (Array.isArray(commits)?commits:[]).map(c=>({
-        sha: c.sha?c.sha.slice(0,7):'',
-        message: (c.commit&&c.commit.message)?c.commit.message.split('\n')[0]:'',
-        date: (c.commit&&c.commit.author&&c.commit.author.date)?c.commit.author.date.slice(0,10):'',
-        author: (c.commit&&c.commit.author)?c.commit.author.name:'',
-      })),
-    };
-    ghCache[key] = enriched;
-    try { sessionStorage.setItem('gh_'+key, JSON.stringify(enriched)); } catch(e){}
-    return enriched;
-  } catch(e) { return null; }
-}
-
-async function enrichAllWithGitHub(projects) {
-  const withGH = projects.filter(p=>p.github_url);
-  if (!withGH.length) return;
-  document.getElementById('last-upd').textContent = 'Enriching from GitHub…';
-  await Promise.allSettled(withGH.map(async p => {
-    const parsed = parseGHUrl(p.github_url);
-    if (!parsed) return;
-    const data = await fetchRepoData(parsed.owner, parsed.repo);
-    if (data) p._github = data;
-  }));
-  const hasPrivate = withGH.some(p=>p._github&&p._github._private);
-  if (hasPrivate && !ghToken) document.getElementById('token-dialog').classList.add('open');
-  document.getElementById('last-upd').textContent = 'Updated '+new Date().toLocaleTimeString()+' · live';
-  renderAll();
-}
-
-function closeTokenDialog() { document.getElementById('token-dialog').classList.remove('open'); }
-function saveToken() {
-  const val = document.getElementById('token-input').value.trim();
-  if (val) {
-    ghToken = val; sessionStorage.setItem('nexus_gh_token', val);
-    ghCache = {};
-    Object.keys(sessionStorage).filter(k=>k.startsWith('gh_')).forEach(k=>sessionStorage.removeItem(k));
-  }
-  closeTokenDialog();
-  enrichAllWithGitHub(allProjects);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// ADD PROJECT MODAL
-// ═══════════════════════════════════════════════════════════════════════════
-let fetchTimeout = null;
-let addedProjects = JSON.parse(localStorage.getItem('nexus_local_projects') || '[]');
-let currentFetchedGH = null;
-let addTeam = userProfile ? userProfile.team : '';
-let addStatus = 'active';
-
-function openAddProject() {
-  resetAddModal();
-  document.getElementById('add-modal').classList.add('open');
-  setTimeout(() => document.getElementById('url-input').focus(), 300);
-}
-function closeAddProject() {
-  document.getElementById('add-modal').classList.remove('open');
-  resetAddModal();
-}
-function resetAddModal() {
-  document.getElementById('url-input').value = '';
-  document.getElementById('url-zone').className = 'url-zone';
-  document.getElementById('fetch-status').style.display = 'none';
-  document.getElementById('preview-section').style.display = 'none';
-  document.getElementById('btn-publish').disabled = true;
-  currentFetchedGH = null;
-  selectedLangs = []; renderLangTags();
-  // Reset selectors
-  document.querySelectorAll('#team-sel .sel-opt').forEach(el=>{
-    el.classList.remove('active'); el.style.background=''; el.style.borderColor='';
-  });
-  document.querySelectorAll('#status-sel .sel-opt').forEach(el=>{
-    el.classList.remove('active'); el.style.background=''; el.style.borderColor='';
-  });
-  // Re-select user's team
-  if (userProfile) {
-    document.querySelectorAll('#team-sel .sel-opt').forEach(el=>{
-      if (el.dataset.val===userProfile.team) selTeam(el);
-    });
-  }
-  // Default status = active
-  document.querySelectorAll('#status-sel .sel-opt').forEach(el=>{
-    if (el.dataset.val==='active') selStatus(el);
-  });
-}
-
-function selTeam(el) {
-  document.querySelectorAll('#team-sel .sel-opt').forEach(e=>{e.classList.remove('active');e.style.background='';e.style.borderColor='';});
-  el.classList.add('active');
-  const col = TEAM_COLORS[el.dataset.val] || 'var(--accent)';
-  el.style.background = col + '22';
-  el.style.borderColor = col;
-  el.style.color = col;
-  addTeam = el.dataset.val;
-}
-function selStatus(el) {
-  document.querySelectorAll('#status-sel .sel-opt').forEach(e=>{e.classList.remove('active');e.style.background='';e.style.borderColor='';});
-  el.classList.add('active');
-  const cols = {active:'var(--active)',planning:'var(--planning)',paused:'var(--t3)'};
-  const col = cols[el.dataset.val] || 'var(--accent)';
-  el.style.background = col + '22'; el.style.borderColor = col; el.style.color = col;
-  addStatus = el.dataset.val;
-}
-
-// ── Language tag selector ────────────────────────────────────────────────
-const LANG_LIST = ['JavaScript','TypeScript','Python','Ruby','Go','Rust','HTML','CSS','Shell','Java','C','C++','C#','Swift','Kotlin','PHP','Scala','R','Dart','Elixir','Haskell','Lua','MATLAB','Perl','PowerShell','Batchfile','Vue','Sass','SCSS','Makefile','Dockerfile','Jupyter Notebook'];
-let selectedLangs = []; // [{lang, pct}]
-let sugFocusIdx = -1;
-
-function getLangDotColor(lang) { return LANG_COLORS[lang] || '#6b7280'; }
-
-function renderLangTags() {
-  const wrap = document.getElementById('lang-tags');
-  if (!wrap) return;
-  wrap.innerHTML = selectedLangs.map((l,i) => `
-    <div class="lang-pill">
-      <span class="lang-dot" style="background:${getLangDotColor(l.lang)}"></span>
-      <span>${l.lang}</span>
-      ${l.pct ? `<span class="lang-pct">${l.pct}%</span>` : ''}
-      <button class="lang-remove" onclick="removeLang(${i})">×</button>
-    </div>`).join('');
-}
-
-function removeLang(i) { selectedLangs.splice(i,1); renderLangTags(); }
-
-function addLang(lang, pct) {
-  if (selectedLangs.find(l=>l.lang.toLowerCase()===lang.toLowerCase())) return;
-  selectedLangs.push({lang, pct: pct||0});
-  renderLangTags();
-  document.getElementById('lang-search').value = '';
-  hideLangSuggestions();
-}
-
-function hideLangSuggestions() {
-  const s = document.getElementById('lang-suggestions');
-  if (s) { s.classList.remove('show'); s.innerHTML=''; }
-  sugFocusIdx = -1;
-}
-
-function showLangSuggestions(query) {
-  const box = document.getElementById('lang-suggestions');
-  if (!box) return;
-  const q = query.toLowerCase();
-  const matches = LANG_LIST.filter(l => l.toLowerCase().includes(q) && !selectedLangs.find(s=>s.lang.toLowerCase()===l.toLowerCase())).slice(0,8);
-  if (!matches.length) { hideLangSuggestions(); return; }
-  box.innerHTML = matches.map((l,i)=>`
-    <div class="lang-sug-item" data-lang="${l}" onclick="addLang('${l}',0)">
-      <span class="sug-dot" style="background:${getLangDotColor(l)}"></span>
-      <span>${l}</span>
-    </div>`).join('');
-  box.classList.add('show');
-  sugFocusIdx = -1;
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const input = document.getElementById('lang-search');
-  if (!input) return;
-  input.addEventListener('input', function() {
-    const q = this.value.trim();
-    if (q.length > 0) showLangSuggestions(q); else hideLangSuggestions();
-  });
-  input.addEventListener('keydown', function(e) {
-    const items = document.querySelectorAll('.lang-sug-item');
-    if (e.key==='ArrowDown') { sugFocusIdx=Math.min(sugFocusIdx+1,items.length-1); items.forEach((el,i)=>el.classList.toggle('focused',i===sugFocusIdx)); e.preventDefault(); }
-    else if (e.key==='ArrowUp') { sugFocusIdx=Math.max(sugFocusIdx-1,0); items.forEach((el,i)=>el.classList.toggle('focused',i===sugFocusIdx)); e.preventDefault(); }
-    else if (e.key==='Enter' && sugFocusIdx>=0 && items[sugFocusIdx]) { items[sugFocusIdx].click(); e.preventDefault(); }
-    else if (e.key==='Enter' && this.value.trim()) { addLang(this.value.trim(),0); e.preventDefault(); }
-    else if (e.key==='Escape') hideLangSuggestions();
-  });
-  document.addEventListener('click', e=>{ if(!e.target.closest('.lang-tag-wrap')) hideLangSuggestions(); });
-});
-
-document.getElementById('url-input').addEventListener('input', function() {
-  clearTimeout(fetchTimeout);
-  const val = this.value.trim();
-  if (!val) { document.getElementById('url-zone').className='url-zone'; document.getElementById('fetch-status').style.display='none'; return; }
-  const gh = parseGHUrl(val);
-  if (!gh) return;
-  fetchTimeout = setTimeout(() => doFetchPreview(gh), 600);
-});
-
-async function doFetchPreview(gh) {
-  const zone = document.getElementById('url-zone');
-  const status = document.getElementById('fetch-status');
-  zone.className = 'url-zone fetching';
-  status.style.display = 'flex';
-  status.innerHTML = '<div class="fetch-spinner"></div><span class="fetch-loading">Fetching from GitHub…</span>';
-
-  const data = await fetchRepoData(gh.owner, gh.repo);
-
-  if (!data || data._private || data._rateLimit) {
-    zone.className = 'url-zone';
-    if (data && data._private) {
-      status.innerHTML = '<span class="gh-private">🔒 Private repo — enter your GitHub token to load it</span>';
-    } else if (data && data._rateLimit) {
-      status.innerHTML = '<span class="fetch-err">Rate limited — add a GitHub token to continue</span>';
-    } else {
-      status.innerHTML = '<span class="fetch-err">Could not find that repo — check the URL</span>';
-    }
-    // Still allow manual entry
-    showPreviewFields({
-      name: gh.repo.replace(/-/g,'  ').replace(/\b\w/g,c=>c.toUpperCase()),
-      one_liner: '', description: '', language: '', tags: ''
-    });
-    return;
-  }
-
-  zone.className = 'url-zone done';
-  status.innerHTML = '<span class="fetch-ok">✓ Loaded from GitHub</span>';
-  currentFetchedGH = data;
-
-  const name = gh.repo.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
-  const desc = data.description || '';
-  const lang = data.language || '';
-  const tags = [...(data.topics||[]), lang].filter(Boolean).join(',');
-
-  await showPreviewFields({ name, one_liner: desc, description: desc, language: lang, languages: data.languages||[], tags });
-  document.getElementById('btn-publish').disabled = false;
-}
-
-async function showPreviewFields(vals) {
-  document.getElementById('preview-section').style.display = 'block';
-  document.getElementById('pf-name-input').value = vals.name || '';
-  document.getElementById('pf-oneliner-input').value = vals.one_liner || '';
-  document.getElementById('pf-desc-input').value = vals.description || '';
-  // Populate language tags from GitHub languages breakdown
-  selectedLangs = (vals.languages || []).map(l=>({lang:l.lang, pct:l.pct}));
-  if (!selectedLangs.length && vals.language) selectedLangs = [{lang:vals.language, pct:0}];
-  renderLangTags();
-  document.getElementById('pf-tags-input').value = vals.tags || '';
-
-  // Stagger animate fields in
-  const fields = document.querySelectorAll('.preview-field');
-  fields.forEach((f,i) => {
-    f.style.opacity='0'; f.style.transform='translateY(6px)';
-    setTimeout(()=>{ f.style.opacity='1'; f.style.transform='none'; }, i*80);
-  });
-  document.getElementById('btn-publish').disabled = false;
-}
-
-function publishProject() {
-  const github_url = document.getElementById('url-input').value.trim();
-  const name = document.getElementById('pf-name-input').value.trim();
-  if (!name) return;
-
-  const project = {
-    _local: true,
-    _id: Date.now()+'',
-    name,
-    owner: userProfile ? userProfile.name : 'You',
-    team: addTeam,
-    status: addStatus,
-    one_liner: document.getElementById('pf-oneliner-input').value.trim(),
-    description: document.getElementById('pf-desc-input').value.trim(),
-    tech_stack: selectedLangs.map(l=>l.lang).join(','),
-    tags: document.getElementById('pf-tags-input').value.trim(),
-    github_url,
-    last_updated: new Date().toISOString().slice(0,10),
-    latest_update: 'Added to Nexus',
-    update_log: new Date().toISOString().slice(0,10)+' note: Added to Nexus',
-    domain: '',
-    client: '',
-  };
-  if (currentFetchedGH) project._github = currentFetchedGH;
-
-  addedProjects.unshift(project);
-  localStorage.setItem('nexus_local_projects', JSON.stringify(addedProjects.slice(0,50)));
-  closeAddProject();
-  allProjects = [...addedProjects, ...sheetProjects];
-  renderAll();
-  updateMetrics();
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// DATA
-// ═══════════════════════════════════════════════════════════════════════════
-let allProjects = [];
-let sheetProjects = [];
-let filtered = [];
-let activeTeam = 'all';
-let activeStatus = 'all';
-
-function parseCSVLine(line) {
-  const result=[], re=/("(?:[^"]|"")*"|[^,]*),?/g; let m;
-  while((m=re.exec(line))!==null) {
-    if(m.index===re.lastIndex){re.lastIndex++;break;}
-    let v=m[1]||'';
-    if(v.startsWith('"')&&v.endsWith('"')) v=v.slice(1,-1).replace(/""/g,'"');
-    result.push(v.trim());
-  }
-  return result;
-}
-function parseCSV(csv) {
-  const lines=csv.trim().split('\n').filter(l=>l.trim());
-  if(lines.length<2) return [];
-  const headers=parseCSVLine(lines[0]).map(h=>h.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,''));
-  return lines.slice(1).map(line=>{
-    const vals=parseCSVLine(line); const obj={};
-    headers.forEach((h,i)=>obj[h]=(vals[i]||'').trim());
-    return obj;
-  }).filter(p=>p.name);
-}
-
-const DEMO = [
-  { name:'ALIS Automation Station', owner:'Russell Bran', team:'engineering', status:'active',
-    one_liner:'Playwright hub for bulk ALIS operations — med cart, staff access, role permissions',
-    description:'A local automation dashboard for ALIS. Upload an Excel template, click Run, and Playwright handles repetitive work headlessly while a live log streams to the browser.',
-    tags:'Playwright,Node.js,ALIS,Automation', domain:'Workflow Automation', tech_stack:'Node.js,Express,Socket.io,Playwright,ExcelJS',
-    github_url:'https://github.com/RussellBrb/ALIS-Automation', last_updated:'2026-05-14',
-    latest_update:'Update Role Permissions and Security Roles Converter shipped',
-    update_log:'2026-05-14 feat: Update Role Permissions shipped|2026-05-11 fix: Pharmacy reprocessing POST fix|2026-05-07 feat: Hub v2 visual console' },
-  { name:'QA Pipeline for Automations', owner:'Russell Bran', team:'engineering', status:'active',
-    one_liner:'Gate-based QA: Pre-QA Gate → Dry Run → Edge Cases → Env Validation → Sign-Off',
-    description:'Structured 5-stage QA pipeline for all ALIS automations. Tracks per-automation stage progress in qa-status.json.',
-    tags:'QA,Testing,Automation,Process', domain:'Workflow Automation', tech_stack:'Node.js,Playwright',
-    github_url:'', last_updated:'2026-05-15', latest_update:'Pipeline defined, qa-status.json live',
-    update_log:'2026-05-15 feat: QA pipeline skill and status JSON created' },
-  { name:'Client Onboarding Playbook', owner:'', team:'onboarding', status:'active',
-    one_liner:'Standardized onboarding workflow and checklist for new ALIS clients',
-    description:'Full onboarding lifecycle from contract signing through go-live. Includes configuration checklists, training materials, and handoff templates.',
-    tags:'Onboarding,Process,Documentation', domain:'Client Onboarding', tech_stack:'Google Workspace',
-    github_url:'', last_updated:'2026-05-12', latest_update:'Added med cart setup section',
-    update_log:'2026-05-12 update: Added med cart setup section|2026-05-08 feat: Initial playbook structure' },
-  { name:'Sales Demo Environment', owner:'', team:'sales', status:'planning',
-    one_liner:'Repeatable sandbox for ALIS sales demos pre-loaded with realistic data',
-    description:'A sandboxed ALIS environment pre-loaded with realistic demo data for sales demos. Includes scripted walkthrough flows for med cart, staff management, and reporting.',
-    tags:'Sales,Demo,ALIS', domain:'Sales Enablement', tech_stack:'ALIS',
-    github_url:'', last_updated:'2026-05-10', latest_update:'Scoping phase',
-    update_log:'2026-05-10 update: Scoping started' },
-  { name:'Nexus Project Hub', owner:'Russell Bran', team:'engineering', status:'active',
-    one_liner:'Central project hub for CS + Engineering with GitHub enrichment and similarity detection',
-    description:'A live team project hub. Connects to Google Sheets, enriches cards with GitHub data, and surfaces collaboration opportunities via similarity detection.',
-    tags:'Dashboard,Collaboration,Tools', domain:'Internal Tools', tech_stack:'HTML,JavaScript,GitHub API',
-    github_url:'', last_updated:'2026-05-22', latest_update:'Full redesign — onboarding, Add Project modal, live GitHub fetch',
-    update_log:'2026-05-22 feat: Full redesign with Add Project flow|2026-05-18 feat: Similarity engine v2' },
-  { name:'CS Automation Assessment Tool', owner:'', team:'customer success', status:'planning',
-    one_liner:'Helps CS quickly assess which automations are relevant for a client',
-    description:'Lightweight tool for CS to identify relevant automations during check-ins without needing engineering involvement each time.',
-    tags:'CS,Process,Assessment,Automation', domain:'Sales Enablement', tech_stack:'Google Workspace',
-    github_url:'', last_updated:'2026-05-08', latest_update:'Concept stage — gathering requirements',
-    update_log:'2026-05-08 note: Concept raised after sales call' },
-];
-
-async function loadAndRender() {
-  const csvUrl = getSheetCsvUrl();
-  if (!csvUrl) {
-    sheetProjects = DEMO;
-    allProjects = [...addedProjects, ...sheetProjects];
-    document.getElementById('last-upd').textContent = 'Demo data';
-    renderAll(); updateMetrics();
-    enrichAllWithGitHub(allProjects);
-    if (!localStorage.getItem('nexus_setup_seen')) {
-      localStorage.setItem('nexus_setup_seen','1');
-      setTimeout(()=>openSetupDialog(false), 1200);
-    }
-    return;
-  }
-  document.getElementById('grid').innerHTML = '<div class="loading"><div class="loading-spinner"></div><div>Loading projects…</div></div>';
-  try {
-    const sep = csvUrl.includes('?')?'&':'?';
-    const res = await fetch(csvUrl+sep+'t='+Date.now());
-    if (!res.ok) throw new Error('Sheet returned '+res.status+' — check sharing settings');
-    const csv = await res.text();
-    sheetProjects = parseCSV(csv);
-    if (!sheetProjects.length) throw new Error('No rows found — check column headers match the template');
-    allProjects = [...addedProjects, ...sheetProjects];
-    document.getElementById('last-upd').textContent = 'Updated '+new Date().toLocaleTimeString();
-    renderAll(); updateMetrics();
-    enrichAllWithGitHub(allProjects);
-  } catch(e) {
-    document.getElementById('grid').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Couldn't load sheet</div><div class="empty-sub">${e.message}</div><br><button class="btn primary" onclick="openSetupDialog(true)" style="margin:0 auto;display:block">Update sheet URL</button></div>`;
-  }
-}
-
-function refresh() { ghCache={}; Object.keys(sessionStorage).filter(k=>k.startsWith('gh_')).forEach(k=>sessionStorage.removeItem(k)); loadAndRender(); }
-
-// ═══════════════════════════════════════════════════════════════════════════
-// METRICS
-// ═══════════════════════════════════════════════════════════════════════════
-function updateMetrics() {
-  const active = allProjects.filter(p=>p.status==='active').length;
-  const owners = new Set(allProjects.map(p=>p.owner).filter(Boolean)).size;
-  const issues = allProjects.reduce((s,p)=>s+(p._github&&p._github.open_issues?p._github.open_issues:0),0);
-  const commits = allProjects.reduce((s,p)=>s+(p._github&&p._github.commits?p._github.commits.length:0),0);
-  document.getElementById('hero-metrics').innerHTML = `
-    <div class="metric pulse"><div class="metric-val">${active}</div><div class="metric-label">Active</div></div>
-    <div class="metric"><div class="metric-val">${allProjects.length}</div><div class="metric-label">Projects</div></div>
-    <div class="metric"><div class="metric-val">${owners}</div><div class="metric-label">Contributors</div></div>
-    <div class="metric"><div class="metric-val">${issues||'—'}</div><div class="metric-label">Open Issues</div></div>
-  `;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// RENDER
-// ═══════════════════════════════════════════════════════════════════════════
-const LANG_COLORS = { JavaScript:'#f1e05a', TypeScript:'#3178c6', Python:'#3572a5', Ruby:'#701516', Go:'#00add8', Rust:'#dea584', HTML:'#e34c26', CSS:'#563d7c', Shell:'#89e051', Java:'#b07219' };
-
-function relTime(dateStr) {
-  if (!dateStr) return '';
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const d = Math.floor(diff/86400000);
-  if (d===0) return 'today'; if (d===1) return '1d ago';
-  if (d<30) return d+'d ago'; if (d<365) return Math.floor(d/30)+'mo ago';
-  return Math.floor(d/365)+'y ago';
-}
-
-function teamClass(team) {
-  if (!team) return '';
-  return 'team-'+team.toLowerCase().replace(/\s+/g,'-');
-}
-function teamColor(team) { return TEAM_COLORS[team] || 'var(--t3)'; }
-function teamLabel(team) { return TEAM_LABELS[team] || team; }
-
-function ownerInitials(name) {
-  if (!name) return '?';
-  return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-}
-
-function renderCard(p, idx) {
-  const gh = p._github;
-  const statusCls = (p.status||'paused').toLowerCase();
-  const commit = gh && gh.commits && gh.commits[0];
-  const teamCol = teamColor(p.team);
-
-  let ghSection = '';
-  if (p.github_url) {
-    if (!gh) {
-      ghSection = `<div class="gh-bar"><span class="gh-loading">Loading from GitHub…</span></div>`;
-    } else if (gh._private) {
-      ghSection = `<div class="gh-bar"><span class="gh-private">🔒 Private repo</span></div>`;
-    } else if (gh._rateLimit) {
-      ghSection = `<div class="gh-bar"><span class="gh-loading">Rate limited</span></div>`;
-    } else {
-      const langDot = gh.language ? `<span class="lang-dot" style="background:${LANG_COLORS[gh.language]||'var(--t3)'}"></span>` : '';
-      ghSection = `<div class="gh-bar">
-        ${gh.language ? `<span class="gh-lang">${langDot}${gh.language}</span>` : ''}
-        ${commit ? `<span class="gh-commit">${commit.message}</span><span class="gh-age">${relTime(commit.date)}</span>` : ''}
-      </div>`;
-    }
-  }
-
-  const tags = (p.tags||'').split(',').filter(Boolean).slice(0,4);
-  const tagHtml = tags.map(t=>`<span class="tag">${t.trim()}</span>`).join('');
-  const ownerAv = p.owner ? `<div class="owner-av" style="background:${teamCol}22;color:${teamCol}">${ownerInitials(p.owner)}</div>` : '';
-  const localBadge = p._local ? `<div class="local-badge">local</div>` : '';
-
-  return `<div class="card ${teamClass(p.team)} stagger-${Math.min(idx+1,5)}" onclick="openDetail(${allProjects.indexOf(p)})">
-    ${localBadge}
-    <div class="card-top">
-      <div class="card-name">${p.name}</div>
-      <div class="status-dot ${statusCls}"></div>
-    </div>
-    ${p.one_liner ? `<div class="card-one-liner">${p.one_liner}</div>` : ''}
-    ${tagHtml ? `<div class="card-tags">${tagHtml}</div>` : ''}
-    ${ghSection}
-    <div class="card-foot">
-      <div class="owner-chip">
-        ${ownerAv}
-        <span class="owner-name">${p.owner||''}</span>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        ${p.team ? `<span class="team-badge" style="background:${teamCol}18;color:${teamCol}">${teamLabel(p.team)}</span>` : ''}
-        <span class="card-date">${relTime(p.last_updated)}</span>
-      </div>
-    </div>
-  </div>`;
-}
-
-function renderAll() {
-  const query = (document.getElementById('search-input').value||'').toLowerCase();
-  filtered = allProjects.filter(p => {
-    const teamMatch = activeTeam==='all' || p.team===activeTeam;
-    const statusMatch = activeStatus==='all' || p.status===activeStatus;
-    const searchMatch = !query || [p.name,p.one_liner,p.description,p.tags,p.owner].join(' ').toLowerCase().includes(query);
-    return teamMatch && statusMatch && searchMatch;
-  });
-
-  const grid = document.getElementById('grid');
-  if (!filtered.length) {
-    grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">No projects found</div><div class="empty-sub">Try adjusting your filters or search.</div></div>`;
-    return;
-  }
-  grid.innerHTML = filtered.map((p,i)=>renderCard(p,i)).join('');
-  renderFilters();
-  updateMetrics();
-}
-
-function renderFilters() {
-  const teams = [...new Set(allProjects.map(p=>p.team).filter(Boolean))];
-  const statuses = [...new Set(allProjects.map(p=>p.status).filter(Boolean))];
-  const teamPills = ['all',...teams].map(t => {
-    const col = t==='all' ? 'var(--accent)' : teamColor(t);
-    const label = t==='all' ? 'All' : teamLabel(t);
-    const count = t==='all' ? allProjects.length : allProjects.filter(p=>p.team===t).length;
-    const act = activeTeam===t ? 'active' : '';
-    return `<button class="pill ${act}" style="${act?'background:'+col+';':''}" onclick="setTeam('${t}')">${label} <span style="opacity:.6">${count}</span></button>`;
-  }).join('');
-  const statusPills = ['all','active','planning','paused'].filter(s=>s==='all'||statuses.includes(s)).map(s=>{
-    const cols = {active:'var(--active)',planning:'var(--planning)',paused:'var(--paused)',all:'var(--accent)'};
-    const col = cols[s];
-    const label = s==='all'?'All statuses':s.charAt(0).toUpperCase()+s.slice(1);
-    const act = activeStatus===s?'active':'';
-    return `<button class="pill ${act}" style="${act?'background:'+col+';':''}" onclick="setStatus('${s}')">${s!=='all'?`<span class="dot" style="background:${col}"></span>`:''}${label}</button>`;
-  }).join('');
-  document.getElementById('filters').innerHTML = `<div class="filter-group">${teamPills}</div><div class="filter-divider"></div><div class="filter-group">${statusPills}</div>`;
-}
-
-function setTeam(t) { activeTeam=t; renderAll(); }
-function setStatus(s) { activeStatus=s; renderAll(); }
-document.getElementById('search-input').addEventListener('input', ()=>renderAll());
-
-// ═══════════════════════════════════════════════════════════════════════════
-// DETAIL PANEL
-// ═══════════════════════════════════════════════════════════════════════════
-function openDetail(idx) {
-  const p = allProjects[idx];
-  if (!p) return;
-  document.getElementById('so-breadcrumb').textContent = teamLabel(p.team)||'Project';
-  const gh = p._github;
-  const teamCol = teamColor(p.team);
-  const statusCols = {active:'var(--active)',planning:'var(--planning)',paused:'var(--paused)'};
-  const statusCol = statusCols[p.status]||'var(--t3)';
-
-  const updates = (p.update_log||'').split('|').filter(Boolean).map(entry=>{
-    const m = entry.trim().match(/^(\d{4}-\d{2}-\d{2})\s+(feat|fix|update|note):\s*(.+)$/i);
-    if (!m) return `<div class="update-entry"><span class="update-date"></span><span class="update-text">${entry.trim()}</span></div>`;
-    return `<div class="update-entry"><span class="update-date">${m[1].slice(5)}</span><span class="update-type ${m[2].toLowerCase()}">${m[2]}</span><span class="update-text">${m[3]}</span></div>`;
-  }).join('');
-
-  let ghSection = '';
-  if (gh && !gh._private && !gh._rateLimit) {
-    const commitHtml = (gh.commits||[]).slice(0,6).map(c=>`
-      <div class="commit-row">
-        <span class="commit-sha">${c.sha}</span>
-        <span class="commit-msg">${c.message}</span>
-        <span class="commit-date">${relTime(c.date)}</span>
-      </div>`).join('');
-    ghSection = `<div class="so-section">
-      <div class="so-section-label">Recent Commits</div>
-      <div class="commits-list">${commitHtml||'<span style="color:var(--t3);font-size:12px">No commits found</span>'}</div>
-    </div>`;
-  }
-
-  const similar = getSimilar(p, allProjects);
-  const simHtml = similar.length ? similar.map(s=>`
-    <div class="similar-card" onclick="openDetail(${allProjects.indexOf(s.project)})">
-      <div class="similar-top"><span class="similar-name">${s.project.name}</span><span class="similar-score">${s.score}%</span></div>
-      <div class="similar-reasons">${s.reasons.join(' · ')}</div>
-    </div>`).join('') : '<span style="color:var(--t3);font-size:12px">No similar projects found yet</span>';
-
-  const stack = (p.tech_stack||'').split(',').filter(Boolean).map(t=>`<span class="tag">${t.trim()}</span>`).join('');
-  const tags = (p.tags||'').split(',').filter(Boolean).map(t=>`<span class="tag">${t.trim()}</span>`).join('');
-
-  document.getElementById('so-body').innerHTML = `
-    <div class="so-name">${p.name}</div>
-    <div class="so-badges">
-      <span style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:${statusCol}">
-        <span class="status-dot ${p.status||'paused'}" style="width:7px;height:7px"></span>${(p.status||'').toUpperCase()}
-      </span>
-      ${p.team?`<span class="team-badge" style="background:${teamCol}18;color:${teamCol}">${teamLabel(p.team)}</span>`:''}
-      ${p.owner?`<span style="font-size:12px;color:var(--t2)">${p.owner}</span>`:''}
-    </div>
-
-    ${p.description||p.one_liner?`<div class="so-section"><div class="so-section-label">About</div><div class="so-desc">${p.description||p.one_liner}</div></div>`:''}
-
-    <div class="so-section">
-      <div class="so-section-label">Details</div>
-      <div class="so-detail-grid">
-        ${p.domain?`<div class="so-detail-item"><label>Domain</label><span>${p.domain}</span></div>`:''}
-        ${p.client?`<div class="so-detail-item"><label>Client</label><span>${p.client}</span></div>`:''}
-        ${p.last_updated?`<div class="so-detail-item"><label>Last Updated</label><span>${p.last_updated}</span></div>`:''}
-        ${gh&&gh.language?`<div class="so-detail-item"><label>Language</label><span>${gh.language}</span></div>`:''}
-        ${gh&&gh.open_issues!=null?`<div class="so-detail-item"><label>Open Issues</label><span>${gh.open_issues}</span></div>`:''}
-        ${gh&&gh.stars!=null?`<div class="so-detail-item"><label>Stars</label><span>${gh.stars}</span></div>`:''}
-      </div>
-      ${stack?`<div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">${stack}</div>`:''}
-    </div>
-
-    ${p.github_url?`<div class="so-section"><a class="gh-link" href="${p.github_url}" target="_blank"><svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.56-1.11-4.56-4.95 0-1.09.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0 1 12 6.8a9.56 9.56 0 0 1 2.5.34c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.69 0 3.85-2.34 4.7-4.57 4.95.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0 0 22 12c0-5.52-4.48-10-10-10z"/></svg>${p.github_url.replace('https://','')}</a></div>`:''}
-
-    ${updates?`<div class="so-section"><div class="so-section-label">Update Log</div><div class="update-log">${updates}</div></div>`:''}
-
-    ${ghSection}
-
-    <div class="so-section">
-      <div class="so-section-label">Related Projects</div>
-      <div class="similar-list">${simHtml}</div>
-    </div>
-  `;
-
-  document.getElementById('overlay').classList.add('open');
-  document.getElementById('slideover').classList.add('open');
-}
-
-function closeDetail() {
-  document.getElementById('overlay').classList.remove('open');
-  document.getElementById('slideover').classList.remove('open');
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// BOOT
-// ═══════════════════════════════════════════════════════════════════════════
-initProfile();
-if (userProfile) loadAndRender();
-</script>
 </body>
 </html>
