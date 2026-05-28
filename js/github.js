@@ -51,22 +51,10 @@ async function fetchRepoData(owner, repo) {
       try {
         const rd = await readmeRes.json();
         if (rd.content && rd.encoding === 'base64') {
-          const raw = decodeURIComponent(
+          /* Keep raw markdown — renderMd() in detail.js handles rendering */
+          readme = decodeURIComponent(
             escape(atob(rd.content.replace(/\n/g, '')))
-          );
-          readme = raw
-            .replace(/```[\s\S]*?```/g, '')
-            .replace(/`[^`\n]+`/g, '')
-            .replace(/^#{1,6}\s+/gm, '')
-            .replace(/!\[.*?\]\(.*?\)/g, '')
-            .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-            .replace(/\*\*([^*]+)\*\*/g, '$1')
-            .replace(/\*([^*\n]+)\*/g, '$1')
-            .replace(/^[-*+]\s+/gm, '')
-            .replace(/^\d+\.\s+/gm, '')
-            .replace(/\n{3,}/g, '\n\n')
-            .trim()
-            .slice(0, 600);
+          ).slice(0, 4000);
         }
       } catch (_) {}
     }

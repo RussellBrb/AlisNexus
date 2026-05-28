@@ -101,7 +101,7 @@ function openDetail(id) {
   const readmeHtml = readmeText
     ? `<div class="so-section">
         <div class="so-section-label">README</div>
-        <div class="readme-preview">${escHtml(readmeText)}</div>
+        <div class="readme-preview md-body">${renderMd(readmeText)}</div>
        </div>`
     : '';
 
