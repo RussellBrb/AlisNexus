@@ -116,6 +116,8 @@
     <div class="avatar-menu-name"  id="avatar-menu-name"></div>
     <div class="avatar-menu-email" id="avatar-menu-email"></div>
   </div>
+  <button class="avatar-menu-btn" onclick="closeAvatarMenu();openProfile()">◈ My Profile</button>
+  <button class="avatar-menu-btn" onclick="closeAvatarMenu();openPeopleRoster()">◎ Team Roster</button>
   <button class="avatar-menu-btn" onclick="el('token-dialog').classList.add('open');closeAvatarMenu()">⬡ GitHub Token</button>
   <button class="avatar-menu-btn danger" onclick="signOut();closeAvatarMenu()">→ Sign out</button>
 </div>
@@ -147,6 +149,9 @@
 
 <!-- ── Contributor chips ──────────────────────────────────────────────────── -->
 <div class="contributors-row" id="contrib-row"></div>
+<div id="people-roster-btn-row" style="display:none;padding:0 0 4px">
+  <button class="people-roster-btn" onclick="openPeopleRoster()">◎ View team roster →</button>
+</div>
 
 <!-- ── Project grid ───────────────────────────────────────────────────────── -->
 <main class="main">
@@ -230,7 +235,7 @@
 </div>
 
 <!-- ── Slide-over detail ───────────────────────────────────────────────────── -->
-<div class="overlay" id="overlay" onclick="closeDetail()"></div>
+<div class="overlay" id="overlay" onclick="closeOverlay()"></div>
 <div class="slideover" id="slideover">
   <div class="so-header">
     <div style="font-size:12px;color:var(--t3)" id="so-breadcrumb">Project</div>
@@ -240,6 +245,26 @@
     </div>
   </div>
   <div class="so-body" id="so-body"></div>
+</div>
+
+<!-- ── Profile panel ──────────────────────────────────────────────────────── -->
+<div class="slideover" id="profile-panel">
+  <div class="so-header">
+    <div style="font-size:12px;color:var(--t3)">Profile</div>
+    <button class="so-close" onclick="closeProfile()">✕</button>
+  </div>
+  <div class="so-body" id="prof-body"></div>
+</div>
+
+<!-- ── People roster modal ────────────────────────────────────────────────── -->
+<div class="people-modal-overlay" id="people-modal" onclick="if(event.target===this)closePeopleRoster()">
+  <div class="people-modal-box">
+    <div class="people-modal-header">
+      <div class="people-modal-title">◎ Team Roster</div>
+      <button class="so-close" onclick="closePeopleRoster()">✕</button>
+    </div>
+    <div class="people-body" id="people-body"></div>
+  </div>
 </div>
 
 <!-- ── GitHub Token Dialog ────────────────────────────────────────────────── -->
@@ -266,6 +291,7 @@
 <script src="js/detail.js?v=3"></script>
 <script src="js/modal.js?v=3"></script>
 <script src="js/pulse.js?v=3"></script>
+<script src="js/profile.js?v=3"></script>
 <script src="js/app.js?v=3"></script>
 
 </body>

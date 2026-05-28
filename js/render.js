@@ -143,6 +143,9 @@ function renderFilters() {
   const contribRow = el('contrib-row');
   if (!contribRow) return;
 
+  const rosterBtn = el('people-roster-btn-row');
+  if (rosterBtn) rosterBtn.style.display = owners.length > 1 ? 'block' : 'none';
+
   if (owners.length > 1) {
     const myName = NX.userProfile?.name || '';
     const chips  = owners.map(name => {
