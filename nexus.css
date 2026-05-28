@@ -774,7 +774,7 @@ body {
 }
 
 /* ── Health detail block (Activity tab) ──────────────────────────────────── */
-.h-detail-block  { display: flex; flex-direction: column; gap: 10px; }
+.h-detail-block  { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
 .h-detail-score  { display: flex; align-items: center; gap: 10px; margin-bottom: 2px; }
 .h-detail-caption { font-size: 11px; color: var(--t3); }
 .h-detail-row    { display: flex; align-items: center; gap: 8px; }
