@@ -54,7 +54,13 @@ function openDetail(id) {
   const statusCols = { active: 'var(--active)', planning: 'var(--planning)', paused: 'var(--paused)' };
   const statusCol  = statusCols[p.status] || 'var(--t3)';
 
-  /* ── Shared header (always visible above tabs) ─────────────────────────── */
+  /* ── Shared header — always visible above tabs ─────────────────────────── */
+  /* Pull the best available description: DB field → one-liner → GitHub description */
+  const oneLiner    = p.one_liner   || gh?.description || '';
+  const fullDesc    = p.description || '';
+  /* Show both if they're meaningfully different, otherwise just one */
+  const descIsDiff  = fullDesc && fullDesc.toLowerCase() !== oneLiner.toLowerCase();
+
   const header = `
     <div class="so-name">${escHtml(p.name)}</div>
     <div class="so-badges">
@@ -65,7 +71,15 @@ function openDetail(id) {
       ${p.team  ? `<span class="team-badge" style="background:${teamCol}18;color:${teamCol}">${escHtml(teamLabel(p.team))}</span>` : ''}
       ${p.owner ? `<span style="font-size:12px;color:var(--t2)">${escHtml(p.owner)}</span>` : ''}
       ${p.deploy_url ? `<span class="live-badge" style="position:static"><span class="live-dot"></span>LIVE</span>` : ''}
-    </div>`;
+    </div>
+    ${oneLiner ? `<div class="so-one-liner">${escHtml(oneLiner)}</div>` : ''}
+    ${descIsDiff ? `<div class="so-full-desc">${escHtml(fullDesc)}</div>` : ''}
+    ${p.deploy_url ? `
+      <a class="so-access-btn so-access-inline" href="${escHtml(safeUrl(p.deploy_url))}" target="_blank" rel="noopener">
+        <span class="live-dot" style="width:7px;height:7px"></span>
+        Open ${escHtml(p.name)} →
+      </a>` : ''}
+    <div class="so-header-divider"></div>`;
 
   /* ── Tab nav ───────────────────────────────────────────────────────────── */
   const tabs = `
@@ -76,11 +90,12 @@ function openDetail(id) {
     </div>`;
 
   /* ── Overview tab ──────────────────────────────────────────────────────── */
-  const about = p.description || p.one_liner || gh?.description || '';
   const readmeText = gh?.readme || '';
-  const topics = gh?.topics || [];
-  const topicHtml = topics.length
-    ? `<div class="so-topics">${topics.map(t => `<span class="so-topic">${escHtml(t)}</span>`).join('')}</div>`
+  const topics     = gh?.topics || [];
+  const topicHtml  = topics.length
+    ? `<div class="so-section"><div class="so-section-label">Topics</div>
+        <div class="so-topics">${topics.map(t => `<span class="so-topic">${escHtml(t)}</span>`).join('')}</div>
+       </div>`
     : '';
 
   const readmeHtml = readmeText
@@ -90,23 +105,14 @@ function openDetail(id) {
        </div>`
     : '';
 
-  const accessHtml = p.deploy_url
-    ? `<div class="so-section">
-        <div class="so-section-label">Access</div>
-        <a class="so-access-btn" href="${escHtml(safeUrl(p.deploy_url))}" target="_blank" rel="noopener">
-          <span class="live-dot" style="width:7px;height:7px"></span>
-          Open ${escHtml(p.name)} →
-        </a>
-       </div>`
-    : '';
-
   const overviewPanel = `
     <div class="so-tab-panel" data-panel="overview">
-      ${about ? `<div class="so-section"><div class="so-desc">${escHtml(about)}</div></div>` : ''}
-      ${topicHtml ? `<div class="so-section"><div class="so-section-label">Topics</div>${topicHtml}</div>` : ''}
-      ${accessHtml}
+      ${topicHtml}
       ${readmeHtml}
-      ${!readmeText && !about ? '<div class="so-section"><span style="color:var(--t3);font-size:13px">No description available. Add a README or description to this repo.</span></div>' : ''}
+      ${!readmeText ? `<div class="so-section">
+        <span style="color:var(--t3);font-size:13px">
+          No README found. Add one to the GitHub repo for it to appear here.
+        </span></div>` : ''}
     </div>`;
 
   /* ── Activity tab ──────────────────────────────────────────────────────── */
@@ -222,6 +228,7 @@ function openDetail(id) {
         </div>` : ''}
       ${updates ? `<div class="so-section"><div class="so-section-label">Update Log</div><div class="update-log">${updates}</div></div>` : ''}
       ${ghLinkHtml}
+      ${p.github_url && p.deploy_url ? '' : ghLinkHtml ? '' : ''}
     </div>`;
 
   /* ── Similar projects ──────────────────────────────────────────────────── */
@@ -231,7 +238,7 @@ function openDetail(id) {
         <div class="so-section-label">Similar Projects</div>
         <div class="similar-list">
           ${similar.map(s => `
-            <div class="similar-card" onclick="openDetail(${JSON.stringify(s.project._id)})">
+            <div class="similar-card" onclick="openDetail('${s.project._id}')">
               <div class="similar-top">
                 <span class="similar-name">${escHtml(s.project.name)}</span>
                 <span class="similar-score">${s.score}%</span>

@@ -59,7 +59,7 @@ function renderCard(p, idx) {
           onclick="event.stopPropagation()">Try it →</a>`
     : '';
 
-  return `<div class="card ${teamClass(p.team)} ${mineCls} ${liveCls} stagger-${Math.min(idx + 1, 5)}" onclick="openDetail(${JSON.stringify(p._id)})">
+  return `<div class="card ${teamClass(p.team)} ${mineCls} ${liveCls} stagger-${Math.min(idx + 1, 5)}" onclick="openDetail('${p._id}')">
     ${localBadge}
     ${liveBadge}
     <div class="card-top">

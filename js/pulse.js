@@ -99,7 +99,7 @@ function _renderPulseEvent(e, teamCol) {
   const isLive = e.type === 'live';
 
   return `<div class="pulse-event${isLive ? ' pulse-event--live' : ''}"
-               onclick="openDetail(${JSON.stringify(e.project._id)})"
+               onclick="openDetail('${e.project._id}')"
                style="--tc:${teamCol}">
     <span class="pulse-evt-icon" style="color:${teamCol}">${e.icon}</span>
     <div class="pulse-evt-body">
