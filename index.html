@@ -260,10 +260,17 @@
 <div class="people-modal-overlay" id="people-modal" onclick="if(event.target===this)closePeopleRoster()">
   <div class="people-modal-box">
     <div class="people-modal-header">
-      <div class="people-modal-title">◎ Team Roster</div>
+      <div class="people-modal-title">◎ Team</div>
+      <div class="people-tabs">
+        <button class="people-tab active" id="ptab-roster" onclick="switchPeopleTab('roster')">Roster</button>
+        <button class="people-tab" id="ptab-matrix" onclick="switchPeopleTab('matrix')">Skills Matrix</button>
+      </div>
       <button class="so-close" onclick="closePeopleRoster()">✕</button>
     </div>
     <div class="people-body" id="people-body"></div>
+    <div class="people-body" id="people-matrix-body" style="display:none">
+      <div id="skill-matrix-wrap"></div>
+    </div>
   </div>
 </div>
 
@@ -292,6 +299,7 @@
 <script src="js/modal.js?v=4"></script>
 <script src="js/pulse.js?v=4"></script>
 <script src="js/health.js?v=4"></script>
+<script src="js/skills.js?v=4"></script>
 <script src="js/profile.js?v=4"></script>
 <script src="js/app.js?v=4"></script>
 

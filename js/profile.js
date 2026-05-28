@@ -118,7 +118,7 @@ function openProfile(ownerName) {
       </div>
     </div>` : `<div class="prof-section"><span style="color:var(--t3);font-size:13px">No projects yet.</span></div>`;
 
-  el('prof-body').innerHTML = header + editSection + projSection;
+  el('prof-body').innerHTML = header + editSection + personSkillsHtml(name) + projSection;
   el('profile-panel').classList.add('open');
   el('overlay').classList.add('open');
 }
@@ -229,7 +229,8 @@ function openPeopleRoster() {
     const members = people.filter(p => p.team === t);
 
     const cards = members.map(person => {
-      const isMe = person.name === myName;
+      const isMe  = person.name === myName;
+      const topSk = personTopSkills(person.name);
       return `<div class="person-card" onclick="closePeopleRoster();openProfile('${escHtml(person.name)}')">
         <div class="person-av" style="background:${col}20;color:${col}">
           ${escHtml(ownerInitials(person.name))}
@@ -240,11 +241,7 @@ function openPeopleRoster() {
             ${person.projects.length} project${person.projects.length !== 1 ? 's' : ''}
             ${person.active ? `<span style="color:var(--active)"> · ${person.active} active</span>` : ''}
           </div>
-        </div>
-        <div class="person-proj-dots">
-          ${person.projects.slice(0, 5).map(p =>
-            `<span class="ppd" style="background:${teamColor(p.team)}" title="${escHtml(p.name)}"></span>`
-          ).join('')}
+          ${topSk ? `<div class="person-skill-tags">${topSk}</div>` : ''}
         </div>
       </div>`;
     }).join('');
@@ -265,4 +262,13 @@ function openPeopleRoster() {
 
 function closePeopleRoster() {
   el('people-modal').classList.remove('open');
+}
+
+function switchPeopleTab(tab) {
+  const isMatrix = tab === 'matrix';
+  el('people-body').style.display        = isMatrix ? 'none' : 'flex';
+  el('people-matrix-body').style.display = isMatrix ? 'flex' : 'none';
+  el('ptab-roster').classList.toggle('active', !isMatrix);
+  el('ptab-matrix').classList.toggle('active',  isMatrix);
+  if (isMatrix) renderSkillMatrix();
 }
