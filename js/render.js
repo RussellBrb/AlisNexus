@@ -3,7 +3,7 @@
 
 /* ── Formatting helpers ──────────────────────────────────────────────────── */
 function relTime(dateStr) {
-  if (!dateStr) return '';
+  if (!dateStr) return '—';
   const d = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
   if (d === 0) return 'today';
   if (d === 1) return '1d ago';
@@ -55,11 +55,11 @@ function renderCard(p, idx) {
     ? `<span class="live-badge"><span class="live-dot"></span>LIVE</span>`
     : '';
   const tryBtn     = p.deploy_url
-    ? `<a class="card-try-btn" href="${escHtml(p.deploy_url)}" target="_blank" rel="noopener"
+    ? `<a class="card-try-btn" href="${escHtml(safeUrl(p.deploy_url))}" target="_blank" rel="noopener"
           onclick="event.stopPropagation()">Try it →</a>`
     : '';
 
-  return `<div class="card ${teamClass(p.team)} ${mineCls} ${liveCls} stagger-${Math.min(idx + 1, 5)}" onclick="openDetail(${NX.allProjects.indexOf(p)})">
+  return `<div class="card ${teamClass(p.team)} ${mineCls} ${liveCls} stagger-${Math.min(idx + 1, 5)}" onclick="openDetail(${JSON.stringify(p._id)})">
     ${localBadge}
     ${liveBadge}
     <div class="card-top">
@@ -168,6 +168,7 @@ function renderFilters() {
         <span class="cn">Everyone</span><span class="cc">${NX.allProjects.length}</span>
       </button>${chips}`;
   } else {
+    NX.activeOwner       = 'all'; /* I6: clear stuck filter when row disappears */
     contribRow.innerHTML = '';
   }
 }

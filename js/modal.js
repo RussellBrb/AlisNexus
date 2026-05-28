@@ -21,7 +21,11 @@ function resetAddModal() {
   el('fetch-status').style.display    = 'none';
   el('preview-section').style.display = 'none';
   el('btn-publish').disabled          = true;
-  if (el('pf-deploy-input')) el('pf-deploy-input').value = '';
+  el('pf-name-input').value           = '';
+  el('pf-oneliner-input').value       = '';
+  el('pf-desc-input').value           = '';
+  el('pf-tags-input').value           = '';
+  el('pf-deploy-input').value         = '';
   _currentFetchedGH                  = null;
   NX.selectedLangs                   = [];
   renderLangTags();
@@ -150,6 +154,11 @@ function initLangInput() {
 
 /* ── GitHub URL → preview ────────────────────────────────────────────────── */
 function initUrlInput() {
+  /* Enable publish button whenever the project name field has a value */
+  el('pf-name-input').addEventListener('input', function () {
+    el('btn-publish').disabled = !this.value.trim();
+  });
+
   el('url-input').addEventListener('input', function () {
     clearTimeout(NX.fetchTimeout);
     const val = this.value.trim();
@@ -223,7 +232,8 @@ function showPreviewFields(vals) {
     f.style.opacity = '0'; f.style.transform = 'translateY(6px)';
     setTimeout(() => { f.style.opacity = '1'; f.style.transform = 'none'; }, i * 80);
   });
-  el('btn-publish').disabled = false;
+  /* Enable publish only if the name field has a value — handled by caller on success,
+     or by the name input listener below for the manual-fill path */
 }
 
 /* ── Publish ─────────────────────────────────────────────────────────────── */
@@ -248,7 +258,7 @@ async function publishProject() {
     tech_stack:    NX.selectedLangs.map(l => l.lang).join(','),
     tags:          el('pf-tags-input').value.trim(),
     github_url,
-    deploy_url:    el('pf-deploy-input').value.trim(),
+    deploy_url:    safeUrl(el('pf-deploy-input').value.trim()).replace(/^#$/, ''),
     last_updated:  today,
     latest_update: 'Added to Nexus',
     update_log:    `${today} note: Added to Nexus`,

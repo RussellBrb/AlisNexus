@@ -10,6 +10,10 @@ async function loadAndRender() {
     console.error('Supabase load error:', error);
     NX.allProjects = [];
   } else {
+    /* Carry over existing GitHub enrichment so realtime reloads don't re-fetch */
+    const prevGH = {};
+    NX.allProjects.forEach(p => { if (p.github_url && p._github) prevGH[p.github_url] = p._github; });
+
     NX.allProjects = (data || []).map(row => ({
       _id:           row.id,
       _supabase:     true,
@@ -31,6 +35,11 @@ async function loadAndRender() {
       latest_update: row.latest_update || '',
       update_log:    row.update_log    || '',
     }));
+
+    /* Restore cached GitHub data for unchanged repos */
+    NX.allProjects.forEach(p => {
+      if (p.github_url && prevGH[p.github_url]) p._github = prevGH[p.github_url];
+    });
   }
 
   renderAll();

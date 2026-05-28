@@ -93,11 +93,15 @@ async function enrichAllWithGitHub(projects) {
 
   el('last-upd').textContent = `Updated ${new Date().toLocaleTimeString()} · live`;
   renderAll();
-  renderPulse(); /* refresh pulse with commit data now available */
+  updateMetrics(); /* M3: update Open Issues metric now that _github data is available */
+  renderPulse();   /* refresh pulse with commit data now available */
 }
 
 /* ── Token dialog ────────────────────────────────────────────────────────── */
-function closeTokenDialog() { el('token-dialog').classList.remove('open'); }
+function closeTokenDialog() {
+  el('token-dialog').classList.remove('open');
+  el('token-input').value = '';
+}
 
 async function saveToken() {
   const val = el('token-input').value.trim();

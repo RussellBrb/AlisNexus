@@ -55,6 +55,7 @@ const NX = {
   sugFocusIdx:          -1,
   _pwMode:              false,
   _realtimeSetup:       false,
+  _booted:              false,
 
   /* localStorage-backed so state survives page refresh */
   get userProfile() {
@@ -91,4 +92,10 @@ function escHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+/* ── Security: allow only http/https URLs — blocks javascript: and data: URIs */
+function safeUrl(url) {
+  if (!url) return '#';
+  return /^https?:\/\//i.test(url.trim()) ? url.trim() : '#';
 }

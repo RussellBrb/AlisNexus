@@ -1,8 +1,8 @@
 /* ── detail.js — slide-over project detail panel ─────────────────────────── */
 'use strict';
 
-function openDetail(idx) {
-  const p = NX.allProjects[idx];
+function openDetail(id) {
+  const p = NX.allProjects.find(p => p._id === id);
   if (!p) return;
 
   el('so-breadcrumb').textContent = teamLabel(p.team) || 'Project';
@@ -41,7 +41,7 @@ function openDetail(idx) {
   const similar = getSimilar(p, NX.allProjects);
   const simHtml = similar.length
     ? similar.map(s => `
-        <div class="similar-card" onclick="openDetail(${NX.allProjects.indexOf(s.project)})">
+        <div class="similar-card" onclick="openDetail(${JSON.stringify(s.project._id)})">
           <div class="similar-top">
             <span class="similar-name">${escHtml(s.project.name)}</span>
             <span class="similar-score">${s.score}%</span>
@@ -98,7 +98,7 @@ function openDetail(idx) {
     ${p.deploy_url ? `
     <div class="so-section">
       <div class="so-section-label">Access</div>
-      <a class="so-access-btn" href="${escHtml(p.deploy_url)}" target="_blank" rel="noopener">
+      <a class="so-access-btn" href="${escHtml(safeUrl(p.deploy_url))}" target="_blank" rel="noopener">
         <span class="live-dot" style="width:7px;height:7px"></span>
         Open ${escHtml(p.name)} →
       </a>

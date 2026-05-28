@@ -99,7 +99,7 @@ function _renderPulseEvent(e, teamCol) {
   const isLive = e.type === 'live';
 
   return `<div class="pulse-event${isLive ? ' pulse-event--live' : ''}"
-               onclick="openDetail(${NX.allProjects.indexOf(e.project)})"
+               onclick="openDetail(${JSON.stringify(e.project._id)})"
                style="--tc:${teamCol}">
     <span class="pulse-evt-icon" style="color:${teamCol}">${e.icon}</span>
     <div class="pulse-evt-body">
@@ -109,7 +109,7 @@ function _renderPulseEvent(e, teamCol) {
     <div class="pulse-evt-meta">
       <span class="pulse-evt-time">${time}</span>
       ${isLive && e.url
-        ? `<a class="pulse-try-btn" href="${escHtml(e.url)}" target="_blank" rel="noopener"
+        ? `<a class="pulse-try-btn" href="${escHtml(safeUrl(e.url))}" target="_blank" rel="noopener"
               onclick="event.stopPropagation()">Try it →</a>`
         : ''}
     </div>

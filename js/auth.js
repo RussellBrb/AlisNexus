@@ -172,6 +172,8 @@ function bootAuth() {
   const gate = el('login-gate');
 
   async function hideGateAndBoot(user) {
+    if (NX._booted) return;
+    NX._booted      = true;
     NX.supabaseUser = user;
     gate.classList.add('hide');
     setTimeout(() => { gate.style.display = 'none'; }, 400);
