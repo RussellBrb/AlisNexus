@@ -26,10 +26,12 @@ async function fetchRepoData(owner, repo) {
   }
 
   try {
-    const [repoRes, commitsRes, langsRes] = await Promise.all([
-      fetch(`https://api.github.com/repos/${key}`,                    { headers: ghHeaders() }),
-      fetch(`https://api.github.com/repos/${key}/commits?per_page=8`, { headers: ghHeaders() }),
-      fetch(`https://api.github.com/repos/${key}/languages`,          { headers: ghHeaders() }),
+    const [repoRes, commitsRes, langsRes, readmeRes, contribRes] = await Promise.all([
+      fetch(`https://api.github.com/repos/${key}`,                         { headers: ghHeaders() }),
+      fetch(`https://api.github.com/repos/${key}/commits?per_page=8`,      { headers: ghHeaders() }),
+      fetch(`https://api.github.com/repos/${key}/languages`,               { headers: ghHeaders() }),
+      fetch(`https://api.github.com/repos/${key}/readme`,                  { headers: ghHeaders() }),
+      fetch(`https://api.github.com/repos/${key}/contributors?per_page=6`, { headers: ghHeaders() }),
     ]);
 
     if (!repoRes.ok) {
@@ -42,6 +44,43 @@ async function fetchRepoData(owner, repo) {
     const commits    = commitsRes.ok ? await commitsRes.json() : [];
     const langsRaw   = langsRes.ok  ? await langsRes.json()   : {};
     const totalBytes = Object.values(langsRaw).reduce((s, v) => s + v, 0);
+
+    /* README — decode base64, strip markdown for plain-text preview */
+    let readme = '';
+    if (readmeRes.ok) {
+      try {
+        const rd = await readmeRes.json();
+        if (rd.content && rd.encoding === 'base64') {
+          const raw = decodeURIComponent(
+            escape(atob(rd.content.replace(/\n/g, '')))
+          );
+          readme = raw
+            .replace(/```[\s\S]*?```/g, '')
+            .replace(/`[^`\n]+`/g, '')
+            .replace(/^#{1,6}\s+/gm, '')
+            .replace(/!\[.*?\]\(.*?\)/g, '')
+            .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+            .replace(/\*\*([^*]+)\*\*/g, '$1')
+            .replace(/\*([^*\n]+)\*/g, '$1')
+            .replace(/^[-*+]\s+/gm, '')
+            .replace(/^\d+\.\s+/gm, '')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim()
+            .slice(0, 600);
+        }
+      } catch (_) {}
+    }
+
+    /* Contributors */
+    let contributors = [];
+    if (contribRes.ok) {
+      try {
+        const cd = await contribRes.json();
+        contributors = Array.isArray(cd)
+          ? cd.slice(0, 6).map(c => ({ login: c.login, contributions: c.contributions }))
+          : [];
+      } catch (_) {}
+    }
 
     const enriched = {
       language:       repoData.language,
@@ -58,6 +97,10 @@ async function fetchRepoData(owner, repo) {
       open_issues:    repoData.open_issues_count,
       pushed_at:      repoData.pushed_at,
       default_branch: repoData.default_branch,
+      size:           repoData.size,
+      watchers:       repoData.watchers_count,
+      readme,
+      contributors,
       commits:        (Array.isArray(commits) ? commits : []).map(c => ({
         sha:    c.sha ? c.sha.slice(0, 7) : '',
         message: c.commit?.message?.split('\n')[0] || '',
