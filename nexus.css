@@ -579,6 +579,17 @@ body {
 .so-tab:hover  { color: var(--t2); }
 .so-tab.active { color: var(--accent-l); border-bottom-color: var(--accent-l); }
 
+/* ── README intro callout ("what is this?") ─────────────────────────────── */
+.readme-intro {
+  background: rgba(124,58,237,.08);
+  border: 1px solid rgba(124,58,237,.22);
+  border-left: 3px solid var(--accent-l);
+  border-radius: 8px; padding: 12px 15px; margin-bottom: 10px;
+  font-size: 13px; color: var(--t1); line-height: 1.65;
+}
+.readme-intro .md-p { color: var(--t1); margin-bottom: 6px; }
+.readme-intro .md-p:last-child { margin-bottom: 0; }
+
 /* ── Detail panel README preview ─────────────────────────────────────────── */
 .readme-preview {
   font-size: 13px; color: var(--t2); line-height: 1.7;

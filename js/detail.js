@@ -98,10 +98,18 @@ function openDetail(id) {
        </div>`
     : '';
 
-  const readmeHtml = readmeText
+  /* Smart README: extract intro callout + reorder sections */
+  const { intro: rdIntro, body: rdBody } = reorderReadme(readmeText);
+  const introHtml = rdIntro
+    ? `<div class="readme-intro md-body">${renderMd(rdIntro)}</div>`
+    : '';
+  const bodyHtml = rdBody
+    ? `<div class="readme-preview md-body">${renderMd(rdBody)}</div>`
+    : '';
+  const readmeHtml = (rdIntro || rdBody)
     ? `<div class="so-section">
         <div class="so-section-label">README</div>
-        <div class="readme-preview md-body">${renderMd(readmeText)}</div>
+        ${introHtml}${bodyHtml}
        </div>`
     : '';
 
