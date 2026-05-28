@@ -53,6 +53,7 @@ const NX = {
   addStatus:            'active',
   fetchTimeout:         null,
   sugFocusIdx:          -1,
+  activeHealth:         'all',
   _pwMode:              false,
   _realtimeSetup:       false,
   _booted:              false,

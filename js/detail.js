@@ -148,6 +148,9 @@ function openDetail(id) {
     activityPanel = `
       <div class="so-tab-panel" data-panel="activity" style="display:none">
         <div class="so-section">
+          ${healthDetailHtml(p)}
+        </div>
+        <div class="so-section">
           ${activityStats}
         </div>
         <div class="so-section">

@@ -725,6 +725,66 @@ body {
 .stagger-4 { animation-delay: .20s; }
 .stagger-5 { animation-delay: .25s; }
 
+/* ── Health chip ─────────────────────────────────────────────────────────── */
+.health-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
+  background: color-mix(in srgb, var(--hc) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--hc) 35%, transparent);
+  color: var(--hc); white-space: nowrap; flex-shrink: 0;
+}
+.health-chip--sm { font-size: 9px; padding: 1px 5px; }
+
+/* ── Health bar section ───────────────────────────────────────────────────── */
+.health-bar-section {
+  max-width: 1400px; margin: 0 auto 4px; padding: 0 24px;
+}
+.hbar-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.hbar-title { font-size: 11px; font-weight: 700; color: var(--t3);
+  text-transform: uppercase; letter-spacing: .07em; }
+.hbar-clear {
+  font-size: 11px; color: var(--t3); background: none; border: none;
+  cursor: pointer; padding: 0; transition: color .15s;
+}
+.hbar-clear:hover { color: var(--t1); }
+.hbar-track {
+  height: 8px; border-radius: 20px; overflow: hidden;
+  background: var(--s2); display: flex; margin-bottom: 10px;
+}
+.hbar-seg {
+  height: 100%; transition: width .4s ease; cursor: pointer;
+  opacity: .85;
+}
+.hbar-seg:hover { opacity: 1; }
+.hbar-legend { display: flex; gap: 6px; flex-wrap: wrap; }
+.hbar-leg {
+  display: flex; align-items: center; gap: 5px;
+  background: none; border: 1px solid var(--border); border-radius: 20px;
+  padding: 3px 10px; cursor: pointer; transition: border-color .15s, background .15s;
+}
+.hbar-leg:hover { background: var(--s2); border-color: var(--hc); }
+.hbar-leg-dot   { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.hbar-leg-label { font-size: 11px; color: var(--t2); }
+.hbar-leg-count {
+  font-size: 10px; font-weight: 700; color: var(--t3);
+  background: var(--s2); border-radius: 20px; padding: 0 5px;
+}
+
+/* ── Health detail block (Activity tab) ──────────────────────────────────── */
+.h-detail-block  { display: flex; flex-direction: column; gap: 10px; }
+.h-detail-score  { display: flex; align-items: center; gap: 10px; margin-bottom: 2px; }
+.h-detail-caption { font-size: 11px; color: var(--t3); }
+.h-detail-row    { display: flex; align-items: center; gap: 8px; }
+.h-detail-lbl    { font-size: 11px; color: var(--t3); width: 140px; flex-shrink: 0; }
+.h-detail-track  {
+  flex: 1; height: 5px; background: var(--s2); border-radius: 10px; overflow: hidden;
+}
+.h-detail-fill   { height: 100%; border-radius: 10px; transition: width .4s ease; }
+.h-detail-val    { font-size: 11px; font-weight: 600; color: var(--t1); width: 24px; text-align: right; }
+
 /* ── Profile panel ───────────────────────────────────────────────────────── */
 .prof-header {
   display: flex; gap: 14px; align-items: flex-start; margin-bottom: 16px;

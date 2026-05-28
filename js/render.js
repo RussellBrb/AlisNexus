@@ -19,10 +19,12 @@ function ownerInitials(n) { return n ? n.split(' ').map(w => w[0]).join('').slic
 
 /* ── Card ────────────────────────────────────────────────────────────────── */
 function renderCard(p, idx) {
-  const gh       = p._github;
+  const gh        = p._github;
   const statusCls = (p.status || 'paused').toLowerCase();
-  const commit   = gh?.commits?.[0];
-  const teamCol  = teamColor(p.team);
+  const commit    = gh?.commits?.[0];
+  const teamCol   = teamColor(p.team);
+  const health    = computeHealth(p);
+  const hColor    = health.score > 0 ? health.color : 'transparent';
 
   let ghSection = '';
   if (p.github_url) {
@@ -59,12 +61,17 @@ function renderCard(p, idx) {
           onclick="event.stopPropagation()">Try it →</a>`
     : '';
 
-  return `<div class="card ${teamClass(p.team)} ${mineCls} ${liveCls} stagger-${Math.min(idx + 1, 5)}" onclick="openDetail('${p._id}')">
+  return `<div class="card ${teamClass(p.team)} ${mineCls} ${liveCls} stagger-${Math.min(idx + 1, 5)}"
+    style="border-left:3px solid ${hColor}"
+    onclick="openDetail('${p._id}')">
     ${localBadge}
     ${liveBadge}
     <div class="card-top">
       <div class="card-name">${escHtml(p.name)}</div>
-      <div class="status-dot ${statusCls}"></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        ${health.score > 0 ? healthChip(p, true) : ''}
+        <div class="status-dot ${statusCls}"></div>
+      </div>
     </div>
     ${p.one_liner ? `<div class="card-one-liner">${escHtml(p.one_liner)}</div>` : ''}
     ${tagHtml ? `<div class="card-tags">${tagHtml}</div>` : ''}
@@ -95,6 +102,12 @@ function renderAll() {
                           .join(' ').toLowerCase().includes(query);
     return teamMatch && statusMatch && ownerMatch && searchMatch;
   });
+
+  /* Health filter */
+  if (NX.activeHealth && NX.activeHealth !== 'all') {
+    NX.filtered = NX.filtered.filter(p =>
+      computeHealth(p).label.toLowerCase() === NX.activeHealth);
+  }
 
   const grid = el('grid');
   if (!NX.filtered.length) {

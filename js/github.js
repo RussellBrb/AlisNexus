@@ -124,8 +124,9 @@ async function enrichAllWithGitHub(projects) {
 
   el('last-upd').textContent = `Updated ${new Date().toLocaleTimeString()} · live`;
   renderAll();
-  updateMetrics(); /* M3: update Open Issues metric now that _github data is available */
-  renderPulse();   /* refresh pulse with commit data now available */
+  updateMetrics();   /* M3: update Open Issues metric now that _github data is available */
+  renderPulse();     /* refresh pulse with commit data now available */
+  renderHealthBar(); /* update health distribution bar */
 }
 
 /* ── Token dialog ────────────────────────────────────────────────────────── */
