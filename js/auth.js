@@ -16,6 +16,12 @@ function _loginEmail() {
   return (el('login-email').value || '').trim().toLowerCase();
 }
 
+function showLoginError(errEl, msg) {
+  if (!errEl) return;
+  errEl.textContent   = msg;
+  errEl.style.display = 'block';
+}
+
 function _validateDomain(email, errEl) {
   const domain = email.split('@')[1];
   if (!ALLOWED_DOMAINS.includes(domain)) {
@@ -33,18 +39,29 @@ async function signInWithPassword() {
   errEl.style.display = 'none';
 
   if (!email || !password) {
-    errEl.textContent = 'Please enter your email and password.';
-    errEl.style.display = 'block';
+    showLoginError(errEl, 'Please enter your email and password.');
     return;
   }
   if (!_validateDomain(email, errEl)) return;
 
   const btn = el('login-btn');
   btn.textContent = 'Signing in…'; btn.disabled = true;
-  const { error } = await _sb.auth.signInWithPassword({ email, password });
-  btn.textContent = 'Sign In →'; btn.disabled = false;
-  if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; }
-  /* success handled by onAuthStateChange */
+  try {
+    const { data, error } = await _sb.auth.signInWithPassword({ email, password });
+    console.log('[nexus auth] signInWithPassword →', error ? error.message : 'success', '| session:', !!data?.session);
+    if (error) {
+      showLoginError(errEl, error.message);
+    } else if (!data?.session) {
+      /* No session despite no error usually means email confirmation is required */
+      showLoginError(errEl, 'Signed in, but no session was returned. The account may need email confirmation in Supabase.');
+    }
+    /* success → onAuthStateChange hides the gate */
+  } catch (e) {
+    console.error('[nexus auth] signInWithPassword threw:', e);
+    showLoginError(errEl, 'Could not reach the auth server: ' + (e?.message || e));
+  } finally {
+    btn.textContent = 'Sign In →'; btn.disabled = false;
+  }
 }
 
 async function sendMagicLink() {
@@ -52,23 +69,29 @@ async function sendMagicLink() {
   const errEl = el('login-error');
   errEl.style.display = 'none';
 
-  if (!email) { errEl.textContent = 'Please enter your email.'; errEl.style.display = 'block'; return; }
+  if (!email) { showLoginError(errEl, 'Please enter your email.'); return; }
   if (!_validateDomain(email, errEl)) return;
 
   const btn = el('login-btn');
   btn.textContent = 'Sending…'; btn.disabled = true;
-  const { error } = await _sb.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: 'https://russellbrb.github.io/AlisNexus' },
-  });
-  if (error) {
-    errEl.textContent = error.message; errEl.style.display = 'block';
+  /* Return to wherever the app is actually running (local or deployed), minus any hash */
+  const redirectTo = window.location.href.split('#')[0];
+  try {
+    const { error } = await _sb.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } });
+    console.log('[nexus auth] signInWithOtp →', error ? error.message : 'sent', '| redirectTo:', redirectTo);
+    if (error) {
+      showLoginError(errEl, error.message);
+      btn.textContent = 'Send Magic Link →'; btn.disabled = false;
+      return;
+    }
+    el('login-form').style.display = 'none';
+    el('login-sent-email').textContent = email;
+    el('login-sent').style.display = 'block';
+  } catch (e) {
+    console.error('[nexus auth] signInWithOtp threw:', e);
+    showLoginError(errEl, 'Could not reach the auth server: ' + (e?.message || e));
     btn.textContent = 'Send Magic Link →'; btn.disabled = false;
-    return;
   }
-  el('login-form').style.display = 'none';
-  el('login-sent-email').textContent = email;
-  el('login-sent').style.display = 'block';
 }
 
 function signOut() {
@@ -104,7 +127,7 @@ function initProfile() {
 
 function applyProfile() {
   const profile = NX.userProfile;
-  if (!profile) return;
+  if (!profile || !profile.name) return;
 
   const av       = el('user-avatar');
   const initials = profile.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -166,12 +189,9 @@ function bootAuth() {
   localStorage.removeItem('nexus_sheet_url');
   localStorage.removeItem('nexus_local_projects');
 
-  /* Fast path: render profile immediately from localStorage while Supabase loads */
-  if (NX.userProfile) initProfile();
-
   const gate = el('login-gate');
 
-  async function hideGateAndBoot(user) {
+  function hideGateAndBoot(user) {
     if (NX._booted) return;
     NX._booted      = true;
     NX.supabaseUser = user;
@@ -183,24 +203,43 @@ function bootAuth() {
       NX.userProfile = { name: meta.name, team: meta.team };
     } else if (!NX.userProfile) {
       const nameEl = el('ob-name');
-      if (nameEl) nameEl.value = user.email.split('@')[0];
+      if (nameEl) nameEl.value = (user.email || '').split('@')[0];
     }
 
     /* Restore GitHub token from Supabase metadata — works across devices */
     if (meta.gh_token && !NX.ghToken) NX.ghToken = meta.gh_token;
 
-    initProfile();
+    try { initProfile(); } catch (e) { console.error('[nexus auth] initProfile failed:', e); }
     if (NX.userProfile) loadAndRender();
   }
 
-  /* Handle magic link clicks and password sign-in via auth state changes */
+  /* ── Critical auth wiring FIRST — must never be blocked by optimistic UI work ── */
+  /* Handle magic-link returns and password sign-in via auth state changes.        */
+  /* setTimeout(…,0) keeps the callback from holding the GoTrue lock during our work. */
   _sb.auth.onAuthStateChange((event, session) => {
-    if (event === 'SIGNED_IN' && session) hideGateAndBoot(session.user);
-    else if (event === 'SIGNED_OUT') { NX.userProfile = null; location.reload(); }
+    console.log('[nexus auth] event:', event, '| session:', !!session);
+    if (event === 'SIGNED_IN' && session) {
+      setTimeout(() => hideGateAndBoot(session.user), 0);
+    } else if (event === 'SIGNED_OUT') {
+      NX.userProfile = null; location.reload();
+    }
   });
 
-  /* Check for existing session (returning user, page refresh) */
-  _sb.auth.getSession().then(({ data }) => {
-    if (data.session) hideGateAndBoot(data.session.user);
-  });
+  /* Check for an existing/returning session (page refresh, magic-link hash) */
+  _sb.auth.getSession()
+    .then(({ data, error }) => {
+      if (error) console.error('[nexus auth] getSession error:', error.message);
+      console.log('[nexus auth] getSession → session:', !!data?.session);
+      if (data?.session) hideGateAndBoot(data.session.user);
+    })
+    .catch(e => console.error('[nexus auth] getSession threw:', e));
+
+  /* Optimistic profile render from localStorage — isolated so a stale/partial   */
+  /* value can never throw and break the auth wiring above.                       */
+  try {
+    if (NX.userProfile) initProfile();
+  } catch (e) {
+    console.error('[nexus auth] optimistic initProfile failed; clearing stale profile:', e);
+    NX.userProfile = null;
+  }
 }

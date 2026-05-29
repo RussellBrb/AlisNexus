@@ -77,7 +77,12 @@ const NX = {
 
 /* ── Supabase client (implicit flow required for GitHub Pages static hosting) */
 const _sb = supabase.createClient(SUPA_URL, SUPA_KEY, {
-  auth: { flowType: 'implicit' },
+  auth: {
+    flowType:           'implicit',  // hash-token magic links — works on static hosting
+    detectSessionInUrl: true,        // parse #access_token on magic-link return
+    persistSession:     true,        // keep session across refreshes
+    autoRefreshToken:   true,
+  },
 });
 
 /* ── DOM utilities ───────────────────────────────────────────────────────── */
