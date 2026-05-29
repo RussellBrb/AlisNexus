@@ -1,0 +1,34 @@
+# ── Secrets & environment ──────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ── Dependencies / build artifacts ─────────────────────────────────────────
+node_modules/
+dist/
+build/
+*.log
+npm-debug.log*
+
+# ── PHI / sensitive run output — MUST NOT be committed ──────────────────────
+runs/
+errors/
+
+# ── Nested project that has its own git history ────────────────────────────
+alis-automation-hub/
+
+# ── Local-only preview & scratch ───────────────────────────────────────────
+nexus_preview.html
+*_preview_tmp.html
+
+# ── Office lock & temp files ───────────────────────────────────────────────
+~$*
+.~lock.*#
+*.tmp
+
+# ── OS cruft ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
