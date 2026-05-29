@@ -134,7 +134,7 @@ function renderFilters() {
     const label = t === 'all' ? 'All' : teamLabel(t);
     const count = t === 'all' ? NX.allProjects.length : NX.allProjects.filter(p => p.team === t).length;
     const act   = NX.activeTeam === t ? 'active' : '';
-    return `<button class="pill ${act}" style="${act ? `background:${col};` : ''}" onclick="setTeam(${JSON.stringify(t)})">${escHtml(label)} <span style="opacity:.6">${count}</span></button>`;
+    return `<button class="pill ${act}" style="${act ? `background:${col};` : ''}" onclick="setTeam(${escHtml(JSON.stringify(t))})">${escHtml(label)} <span style="opacity:.6">${count}</span></button>`;
   }).join('');
 
   /* Status pills */
@@ -145,7 +145,7 @@ function renderFilters() {
       const col   = cols[s];
       const label = s === 'all' ? 'All statuses' : s.charAt(0).toUpperCase() + s.slice(1);
       const act   = NX.activeStatus === s ? 'active' : '';
-      return `<button class="pill ${act}" style="${act ? `background:${col};` : ''}" onclick="setStatus(${JSON.stringify(s)})">${s !== 'all' ? `<span class="dot" style="background:${col}"></span>` : ''}${escHtml(label)}</button>`;
+      return `<button class="pill ${act}" style="${act ? `background:${col};` : ''}" onclick="setStatus(${escHtml(JSON.stringify(s))})">${s !== 'all' ? `<span class="dot" style="background:${col}"></span>` : ''}${escHtml(label)}</button>`;
     }).join('');
 
   el('filters').innerHTML =
@@ -169,7 +169,7 @@ function renderFilters() {
       const style  = act ? `background:${col};border-color:${col}` : '';
       const youTag = name === myName ? `<span class="you-tag">you</span>` : '';
       /* Use JSON.stringify to safely encode any name (incl. apostrophes) */
-      return `<button class="contrib-chip ${act}" style="${style}" onclick="setOwner(${JSON.stringify(name)})">
+      return `<button class="contrib-chip ${act}" style="${style}" onclick="setOwner(${escHtml(JSON.stringify(name))})">
         <div class="ca" style="background:${col}22;color:${col}">${ownerInitials(name)}</div>
         <span class="cn">${escHtml(name)}</span>${youTag}
         <span class="cc">${count}</span>
