@@ -639,6 +639,9 @@ button, a, input, [onclick] { outline: none; }
 /* On a LIVE + is-mine card, the remove ✕ and the LIVE badge both pin top-right —
    shift the ✕ to the left of the LIVE badge so they don't stack. */
 .card.has-deploy .local-badge { right: 64px; top: 11px; }
+/* The LIVE badge is absolutely pinned top-right and overlaps the in-flow card-top
+   content (health chip + status dot). Reserve space so that row clears the badge. */
+.card.has-deploy .card-top { padding-right: 62px; }
 
 .card-try-btn {
   display: inline-flex; align-items: center;
