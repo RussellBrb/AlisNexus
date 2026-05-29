@@ -636,6 +636,9 @@ button, a, input, [onclick] { outline: none; }
 
 .card.has-deploy { border-color: rgba(16,185,129,.18); }
 .card.has-deploy:hover { border-color: rgba(16,185,129,.4); }
+/* On a LIVE + is-mine card, the remove ✕ and the LIVE badge both pin top-right —
+   shift the ✕ to the left of the LIVE badge so they don't stack. */
+.card.has-deploy .local-badge { right: 64px; top: 11px; }
 
 .card-try-btn {
   display: inline-flex; align-items: center;
