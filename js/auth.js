@@ -54,8 +54,11 @@ async function signInWithPassword() {
     } else if (!data?.session) {
       /* No session despite no error usually means email confirmation is required */
       showLoginError(errEl, 'Signed in, but no session was returned. The account may need email confirmation in Supabase.');
+    } else {
+      /* Drive the app directly from the returned session — do NOT rely on the
+         onAuthStateChange event, which does not reliably fire for password grants. */
+      enterApp(data.session.user);
     }
-    /* success → onAuthStateChange hides the gate */
   } catch (e) {
     console.error('[nexus auth] signInWithPassword threw:', e);
     showLoginError(errEl, 'Could not reach the auth server: ' + (e?.message || e));
@@ -183,43 +186,48 @@ function completeOnboard() {
   loadAndRender();
 }
 
+/* ── Enter the app once a session exists (single source of truth) ─────────── */
+/* Called directly from sign-in success and from getSession/onAuthStateChange.  */
+/* Idempotent via NX._booted, so multiple triggers are safe.                    */
+function enterApp(user) {
+  if (NX._booted || !user) return;
+  NX._booted      = true;
+  NX.supabaseUser = user;
+
+  const gate = el('login-gate');
+  if (gate) {
+    gate.classList.add('hide');
+    setTimeout(() => { gate.style.display = 'none'; }, 400);
+  }
+
+  const meta = user.user_metadata || {};
+  if (meta.name && meta.team) {
+    NX.userProfile = { name: meta.name, team: meta.team };
+  } else if (!NX.userProfile) {
+    const nameEl = el('ob-name');
+    if (nameEl) nameEl.value = (user.email || '').split('@')[0];
+  }
+
+  /* Restore GitHub token from Supabase metadata — works across devices */
+  if (meta.gh_token && !NX.ghToken) NX.ghToken = meta.gh_token;
+
+  try { initProfile(); } catch (e) { console.error('[nexus auth] initProfile failed:', e); }
+  if (NX.userProfile) loadAndRender();
+}
+
 /* ── Boot sequence (runs last after all modules load) ────────────────────── */
 function bootAuth() {
   /* Clean up legacy keys from old localStorage-only version */
   localStorage.removeItem('nexus_sheet_url');
   localStorage.removeItem('nexus_local_projects');
 
-  const gate = el('login-gate');
-
-  function hideGateAndBoot(user) {
-    if (NX._booted) return;
-    NX._booted      = true;
-    NX.supabaseUser = user;
-    gate.classList.add('hide');
-    setTimeout(() => { gate.style.display = 'none'; }, 400);
-
-    const meta = user.user_metadata || {};
-    if (meta.name && meta.team) {
-      NX.userProfile = { name: meta.name, team: meta.team };
-    } else if (!NX.userProfile) {
-      const nameEl = el('ob-name');
-      if (nameEl) nameEl.value = (user.email || '').split('@')[0];
-    }
-
-    /* Restore GitHub token from Supabase metadata — works across devices */
-    if (meta.gh_token && !NX.ghToken) NX.ghToken = meta.gh_token;
-
-    try { initProfile(); } catch (e) { console.error('[nexus auth] initProfile failed:', e); }
-    if (NX.userProfile) loadAndRender();
-  }
-
-  /* ── Critical auth wiring FIRST — must never be blocked by optimistic UI work ── */
-  /* Handle magic-link returns and password sign-in via auth state changes.        */
-  /* setTimeout(…,0) keeps the callback from holding the GoTrue lock during our work. */
+  /* ── Auth wiring FIRST — never blocked by optimistic UI work ── */
+  /* Backup listener: catches magic-link returns and cross-tab sign-in. The     */
+  /* password path calls enterApp() directly since SIGNED_IN may not fire.      */
   _sb.auth.onAuthStateChange((event, session) => {
     console.log('[nexus auth] event:', event, '| session:', !!session);
     if (event === 'SIGNED_IN' && session) {
-      setTimeout(() => hideGateAndBoot(session.user), 0);
+      setTimeout(() => enterApp(session.user), 0);
     } else if (event === 'SIGNED_OUT') {
       NX.userProfile = null; location.reload();
     }
@@ -230,7 +238,7 @@ function bootAuth() {
     .then(({ data, error }) => {
       if (error) console.error('[nexus auth] getSession error:', error.message);
       console.log('[nexus auth] getSession → session:', !!data?.session);
-      if (data?.session) hideGateAndBoot(data.session.user);
+      if (data?.session) enterApp(data.session.user);
     })
     .catch(e => console.error('[nexus auth] getSession threw:', e));
 
