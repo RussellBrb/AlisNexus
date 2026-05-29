@@ -4,11 +4,32 @@
 async function loadAndRender() {
   el('grid').innerHTML = '<div class="loading"><div class="loading-spinner"></div><div>Loading projects…</div></div>';
 
-  const { data, error } = await _sb.from('projects').select('*').order('created_at', { ascending: false });
+  console.log('[nexus data] loading projects…');
+  let data = null, error = null;
+  try {
+    /* Race the query against a timeout so a hung/deadlocked client never spins forever */
+    const res = await Promise.race([
+      _sb.from('projects').select('*').order('created_at', { ascending: false }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('Request timed out after 15s')), 15000)),
+    ]);
+    data = res.data; error = res.error;
+    console.log('[nexus data] projects query returned →', data ? data.length + ' rows' : 'no data', '| error:', error?.message || null);
+  } catch (e) {
+    error = e;
+    console.error('[nexus data] projects query failed/timed out:', e);
+  }
 
   if (error) {
     console.error('Supabase load error:', error);
     NX.allProjects = [];
+    el('grid').innerHTML =
+      '<div class="empty-state"><div class="empty-icon">⚠️</div>' +
+      '<div class="empty-title">Couldn\'t load projects</div>' +
+      '<div class="empty-sub">' + escHtml(error.message || 'Unknown error') +
+      '<br>See the browser console for details, then hit Refresh.</div></div>';
+    updateMetrics();
+    renderPulse();
+    return;
   } else {
     /* Carry over existing GitHub enrichment so realtime reloads don't re-fetch */
     const prevGH = {};
