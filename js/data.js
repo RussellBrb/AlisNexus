@@ -1,9 +1,11 @@
-/* ── data.js — Supabase CRUD, data loading, realtime subscription ────────── */
+/* ── data.js — project data access (Supabase CRUD) ───────────────────────── */
+/* The data layer. loadProjects() fetches + normalizes into NX.allProjects and
+   returns { error }. Rendering and orchestration live in js/app/controller.js;
+   this file never touches the DOM or the view functions. */
 'use strict';
 
-async function loadAndRender() {
-  el('grid').innerHTML = '<div class="loading"><div class="loading-spinner"></div><div>Loading projects…</div></div>';
-
+/* Load + normalize all projects into NX.allProjects. Returns { error }. */
+async function loadProjects() {
   console.log('[nexus data] loading projects…');
   let data = null, error = null;
   try {
@@ -22,59 +24,41 @@ async function loadAndRender() {
   if (error) {
     console.error('Supabase load error:', error);
     NX.allProjects = [];
-    el('grid').innerHTML =
-      '<div class="empty-state"><div class="empty-icon">⚠️</div>' +
-      '<div class="empty-title">Couldn\'t load projects</div>' +
-      '<div class="empty-sub">' + escHtml(error.message || 'Unknown error') +
-      '<br>See the browser console for details, then hit Refresh.</div></div>';
-    updateMetrics();
-    renderPulse();
-    return;
-  } else {
-    /* Carry over existing GitHub enrichment so realtime reloads don't re-fetch */
-    const prevGH = {};
-    NX.allProjects.forEach(p => { if (p.github_url && p._github) prevGH[p.github_url] = p._github; });
-
-    NX.allProjects = (data || []).map(row => ({
-      _id:           row.id,
-      _supabase:     true,
-      _mine:         !!(NX.supabaseUser && row.created_by === NX.supabaseUser.id),
-      _created_at:   row.created_at    || '',
-      name:          row.name          || '',
-      github_url:    row.github_url    || '',
-      deploy_url:    row.deploy_url    || '',
-      one_liner:     row.one_liner     || '',
-      description:   row.description  || '',
-      tags:          row.tags          || '',
-      domain:        row.domain        || '',
-      tech_stack:    row.tech_stack    || '',
-      team:          row.team          || '',
-      status:        row.status        || 'active',
-      owner:         row.owner         || '',
-      client:        row.client        || '',
-      last_updated:  row.last_updated  || '',
-      latest_update: row.latest_update || '',
-      update_log:    row.update_log    || '',
-    }));
-
-    /* Restore cached GitHub data for unchanged repos */
-    NX.allProjects.forEach(p => {
-      if (p.github_url && prevGH[p.github_url]) p._github = prevGH[p.github_url];
-    });
+    return { error };
   }
 
-  renderAll();
-  updateMetrics();
-  renderPulse();
-  enrichAllWithGitHub(NX.allProjects);
+  /* Carry over existing GitHub enrichment so realtime reloads don't re-fetch */
+  const prevGH = {};
+  NX.allProjects.forEach(p => { if (p.github_url && p._github) prevGH[p.github_url] = p._github; });
 
-  /* Realtime subscription — set up once per page load */
-  if (!NX._realtimeSetup) {
-    NX._realtimeSetup = true;
-    _sb.channel('projects-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => loadAndRender())
-      .subscribe();
-  }
+  NX.allProjects = (data || []).map(row => ({
+    _id:           row.id,
+    _supabase:     true,
+    _mine:         !!(NX.supabaseUser && row.created_by === NX.supabaseUser.id),
+    _created_at:   row.created_at    || '',
+    name:          row.name          || '',
+    github_url:    row.github_url    || '',
+    deploy_url:    row.deploy_url    || '',
+    one_liner:     row.one_liner     || '',
+    description:   row.description  || '',
+    tags:          row.tags          || '',
+    domain:        row.domain        || '',
+    tech_stack:    row.tech_stack    || '',
+    team:          row.team          || '',
+    status:        row.status        || 'active',
+    owner:         row.owner         || '',
+    client:        row.client        || '',
+    last_updated:  row.last_updated  || '',
+    latest_update: row.latest_update || '',
+    update_log:    row.update_log    || '',
+  }));
+
+  /* Restore cached GitHub data for unchanged repos */
+  NX.allProjects.forEach(p => {
+    if (p.github_url && prevGH[p.github_url]) p._github = prevGH[p.github_url];
+  });
+
+  return { error: null };
 }
 
 function refresh() {
