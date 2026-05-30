@@ -1,5 +1,5 @@
 # Nexus — Return Brief
-*Architecture snapshot + task list. Current as of v8 (2026-05-29).*
+*Architecture snapshot + task list. Current as of v19 (2026-05-30).*
 
 > For the full project overview, module map, schema, and deploy workflow, see `README.md`. This brief is the working state + what's next.
 
@@ -7,31 +7,37 @@
 
 ## Current state
 
-The app is **live and running cleanly** at https://russellbrb.github.io/AlisNexus. Login (magic link + password) works, the project grid renders, the activity pulse populates, and Add Project works. Cache version is `?v=8`.
+The app is **live and running cleanly** at https://russellbrb.github.io/AlisNexus. Login (magic link + password) works, the project grid renders, the activity pulse populates, and Add Project works. Cache version is `?v=19`.
 
-### File inventory (all single-responsibility, ≤ ~300 lines)
+### Module inventory — four layers, 20 modules (all single-responsibility)
 
-| File | Lines | Responsibility |
-|---|---:|---|
-| `index.html` | ~310 | Markup only. Loads the 14 JS modules in dependency order. |
-| `nexus.css` | ~1020 | All styles + design tokens. Single source of truth for theming. |
-| `js/config.js` | ~107 | Constants, `NX` state object, Supabase client, DOM/security utilities. |
-| `js/auth.js` | ~242 | Login (magic link + password), onboarding, profile, avatar menu, `enterApp` / `bootAuth`. |
-| `js/github.js` | ~149 | GitHub API enrichment, token dialog. |
-| `js/similarity.js` | ~58 | Jaccard similarity engine. Pure functions. |
-| `js/data.js` | ~72 | Supabase CRUD, realtime subscription, `loadAndRender()`. |
-| `js/render.js` | ~207 | Cards, filters, contributor chips, metrics. |
-| `js/markdown.js` | ~144 | Markdown renderer for README previews. |
-| `js/detail.js` | ~276 | Slide-over detail panel. |
-| `js/modal.js` | ~274 | Add-project modal, GitHub preview, language/team/status selectors. |
-| `js/pulse.js` | ~141 | Live activity feed. |
-| `js/health.js` | ~161 | `computeHealth()`, health chips + distribution bar. |
-| `js/skills.js` | ~238 | `computePersonSkills()`, team skill matrix. |
-| `js/profile.js` | ~274 | Profile panel + people roster. |
-| `js/app.js` | ~17 | Search debounce, input wiring, `bootAuth()`. |
+As of v19 the JS is organized into `core → io → view → app`. Dependencies only point downward; `core` has no DOM and no network.
 
-Load order (must be preserved — matches the call graph):
-`config → auth → github → similarity → data → render → markdown → detail → modal → pulse → health → skills → profile → app`
+**core/** — pure logic, no DOM/IO
+- `format.js` — relTime, escHtml, safeUrl, team class/color/label, ownerInitials
+- `state.js` — the `NX` store + `subscribe()/emit()` pub/sub
+- `config.js` — constants (Supabase keys, team/lang maps) + DOM utils (el/qs/qsa)
+- `similarity.js` — Jaccard similarity engine
+- `health.js` — `computeHealth()` + tiers
+- `skills.js` — `computePersonSkills()`
+
+**io/** — the only code that talks to the outside
+- `supabase.js` — the Supabase client (`_sb`)
+- `github.js` — GitHub API enrichment + token dialog
+- `data.js` — `loadProjects()` + project CRUD/realtime
+
+**view/** — DOM rendering only
+- `render.js`, `detail.js`, `modal.js`, `pulse.js`, `profile.js`, `markdown.js`, `health-view.js`, `skills-view.js`
+
+**app/** — boot + orchestration
+- `auth.js` — login, onboarding, `enterApp` / `bootAuth`
+- `controller.js` — `loadAndRender()`; subscribes `paintViews()` to the store
+- `app.js` — search debounce, input wiring, boot entry
+
+Load order (preserve — matches the call graph):
+`core/format → core/state → core/config → io/supabase → io/github → io/data → core/similarity → view/markdown → view/render → view/detail → view/modal → view/pulse → core/health → view/health-view → core/skills → view/skills-view → view/profile → app/auth → app/controller → app/app`
+
+Plus `index.html` (~322 lines, markup only) and `nexus.css` (~1020 lines, all styles + design tokens).
 
 ### Design system (v8 overhaul)
 

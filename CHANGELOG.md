@@ -2,6 +2,27 @@
 
 All notable changes to Nexus. Dates are YYYY-MM-DD.
 
+## [v19] — 2026-05-30
+
+### Refactored — clean layered architecture (S1–S7, micro-slices, zero behavior change)
+The flat `js/` folder was reorganized into `core → io → view → app` (20 modules; dependencies point downward, `core` is pure):
+- **S1** pure helpers → `core/format.js`
+- **S2** `NX` store → `core/state.js`; `config.js` becomes pure constants
+- **S3** Supabase client → `io/supabase.js`, GitHub API → `io/github.js`
+- **S4** `health`/`skills` split into pure `core/` + `view/` rendering
+- **S5** `data.js` → pure `loadProjects()` returning `{error}`; orchestration → `app/controller.js`
+- **S6** `subscribe()/emit()` pub/sub added to the store; controller emits, views repaint
+- **S7** remaining files folderized; final load order locked
+
+Verified post-refactor: 20/20 modules parse, no duplicate globals, behavior unchanged in-browser.
+
+### Fixed (v9–v12)
+- Card left edge collapsed to a single team-colored bar (was stacking team + health colors).
+- LIVE badge no longer overlaps the health chip / status dot on owned live cards.
+- Onboarding screen gained a "Not you? Sign out" escape hatch (no more being trapped pre-onboarding).
+- Filter pills (team / status / people) now toggle — their `onclick` handlers are HTML-escaped so the markup is valid.
+- Health reframed honestly as **commit activity**; "Stalled" → "Quiet". Scoring unchanged.
+
 ## [v8] — 2026-05-29
 
 A UI/UX overhaul plus a full repair of the login and project-loading flows.
