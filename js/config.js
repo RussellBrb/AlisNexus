@@ -40,15 +40,7 @@ const STOPWORDS = new Set([
 
 /* The NX shared mutable store now lives in js/core/state.js (loaded early). */
 
-/* ── Supabase client (implicit flow required for GitHub Pages static hosting) */
-const _sb = supabase.createClient(SUPA_URL, SUPA_KEY, {
-  auth: {
-    flowType:           'implicit',  // hash-token magic links — works on static hosting
-    detectSessionInUrl: true,        // parse #access_token on magic-link return
-    persistSession:     true,        // keep session across refreshes
-    autoRefreshToken:   true,
-  },
-});
+/* The Supabase client (_sb) now lives in js/io/supabase.js (loaded after config). */
 
 /* ── DOM utilities ───────────────────────────────────────────────────────── */
 function el(id)        { return document.getElementById(id); }
