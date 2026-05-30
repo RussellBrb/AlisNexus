@@ -6,7 +6,7 @@ const HEALTH_TIERS = {
   hot:      { label: 'Hot',      icon: '🔥', color: '#f97316', score: 4 },
   steady:   { label: 'Steady',   icon: '✦',  color: '#22c55e', score: 3 },
   slowing:  { label: 'Slowing',  icon: '↓',  color: '#eab308', score: 2 },
-  stalled:  { label: 'Stalled',  icon: '○',  color: '#6b7280', score: 1 },
+  quiet:    { label: 'Quiet',    icon: '○',  color: '#6b7280', score: 1 },
   paused:   { label: 'Paused',   icon: '⏸',  color: 'var(--paused)', score: 0 },
   planning: { label: 'Planning', icon: '◦',  color: 'var(--planning)', score: 0 },
   nodata:   { label: 'No data',  icon: '?',  color: 'var(--t3)', score: -1 },
@@ -47,7 +47,7 @@ function computeHealth(p) {
   if (commitsThisWeek >= 2 || daysSincePush <= 2)           return HEALTH_TIERS.hot;
   if (commitsThisWeek >= 1 || daysSincePush <= 7)           return HEALTH_TIERS.steady;
   if (commitsThisMonth >= 1 || daysSincePush <= 21)         return HEALTH_TIERS.slowing;
-  return HEALTH_TIERS.stalled;
+  return HEALTH_TIERS.quiet;
 }
 
 /* ── Health chip HTML (used on cards and in detail panel) ────────────────── */
@@ -68,7 +68,7 @@ function renderHealthBar() {
   if (!active.length) { wrap.innerHTML = ''; return; }
 
   /* Count tiers (only for active projects — noise otherwise) */
-  const counts = { hot: 0, steady: 0, slowing: 0, stalled: 0 };
+  const counts = { hot: 0, steady: 0, slowing: 0, quiet: 0 };
   active.forEach(p => {
     const h = computeHealth(p);
     if (counts[h.label.toLowerCase()] !== undefined) counts[h.label.toLowerCase()]++;
@@ -79,7 +79,7 @@ function renderHealthBar() {
     { key: 'hot',     ...HEALTH_TIERS.hot     },
     { key: 'steady',  ...HEALTH_TIERS.steady  },
     { key: 'slowing', ...HEALTH_TIERS.slowing },
-    { key: 'stalled', ...HEALTH_TIERS.stalled },
+    { key: 'quiet',   ...HEALTH_TIERS.quiet   },
   ].filter(t => counts[t.key] > 0);
 
   /* Stacked bar segments */
@@ -101,7 +101,7 @@ function renderHealthBar() {
 
   wrap.innerHTML = `
     <div class="hbar-header">
-      <span class="hbar-title">Project Health</span>
+      <span class="hbar-title">Commit activity</span>
       ${NX.activeHealth !== 'all'
         ? `<button class="hbar-clear" onclick="setHealthFilter('all')">✕ Clear filter</button>`
         : ''}
@@ -154,7 +154,7 @@ function healthDetailHtml(p) {
       <span class="health-chip" style="--hc:${h.color};font-size:13px;padding:5px 12px">
         ${h.icon} ${h.label}
       </span>
-      <span class="h-detail-caption">Based on commit cadence &amp; push activity</span>
+      <span class="h-detail-caption">Reflects GitHub commit cadence — a quiet score doesn't always mean inactive</span>
     </div>
     ${barHtml}
   </div>`;
