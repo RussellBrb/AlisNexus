@@ -39,4 +39,13 @@ const NX = {
     if (v) localStorage.setItem('nexus_gh_token', v);
     else   localStorage.removeItem('nexus_gh_token');
   },
+
+  /* ── Tiny pub/sub: views subscribe(); a data change calls emit() ────────── */
+  _subs: [],
+  subscribe(fn) { this._subs.push(fn); },
+  emit() {
+    this._subs.forEach(fn => {
+      try { fn(); } catch (e) { console.error('[nexus store] subscriber error:', e); }
+    });
+  },
 };

@@ -5,6 +5,15 @@
    lets data.js stay free of any rendering. */
 'use strict';
 
+/* The view subscriber: repaint everything that derives from project data.
+   Registered once; the store's emit() triggers it whenever data changes. */
+function paintViews() {
+  renderAll();
+  updateMetrics();
+  renderPulse();
+}
+NX.subscribe(paintViews);
+
 async function loadAndRender() {
   el('grid').innerHTML = '<div class="loading"><div class="loading-spinner"></div><div>Loading projects…</div></div>';
 
@@ -21,9 +30,7 @@ async function loadAndRender() {
     return;
   }
 
-  renderAll();
-  updateMetrics();
-  renderPulse();
+  NX.emit();                 /* notify subscribed views to repaint */
   enrichAllWithGitHub(NX.allProjects);
 
   /* Realtime subscription — set up once per page load */
