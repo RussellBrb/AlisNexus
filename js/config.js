@@ -90,18 +90,4 @@ function el(id)        { return document.getElementById(id); }
 function qs(sel, ctx)  { return (ctx || document).querySelector(sel); }
 function qsa(sel, ctx) { return [...(ctx || document).querySelectorAll(sel)]; }
 
-/* ── Security: escape all user-supplied content before inserting into DOM ── */
-function escHtml(str) {
-  return String(str == null ? '' : str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-/* ── Security: allow only http/https URLs — blocks javascript: and data: URIs */
-function safeUrl(url) {
-  if (!url) return '#';
-  return /^https?:\/\//i.test(url.trim()) ? url.trim() : '#';
-}
+/* escHtml() and safeUrl() now live in js/core/format.js (pure, loaded first). */

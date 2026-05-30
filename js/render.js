@@ -1,21 +1,7 @@
 /* ── render.js — cards, filters, contributor chips, metrics ──────────────── */
 'use strict';
 
-/* ── Formatting helpers ──────────────────────────────────────────────────── */
-function relTime(dateStr) {
-  if (!dateStr) return '—';
-  const d = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
-  if (d === 0) return 'today';
-  if (d === 1) return '1d ago';
-  if (d < 30)  return `${d}d ago`;
-  if (d < 365) return `${Math.floor(d / 30)}mo ago`;
-  return `${Math.floor(d / 365)}y ago`;
-}
-
-function teamClass(team)  { return team ? 'team-' + team.toLowerCase().replace(/\s+/g, '-') : ''; }
-function teamColor(team)  { return TEAM_COLORS[team] || 'var(--t3)'; }
-function teamLabel(team)  { return TEAM_LABELS[team] || team || ''; }
-function ownerInitials(n) { return n ? n.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?'; }
+/* Formatting helpers (relTime, teamClass/Color/Label, ownerInitials) → js/core/format.js */
 
 /* ── Card ────────────────────────────────────────────────────────────────── */
 function renderCard(p, idx) {
