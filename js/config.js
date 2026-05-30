@@ -38,42 +38,7 @@ const STOPWORDS = new Set([
   'through','during',
 ]);
 
-/* ── Shared mutable state ────────────────────────────────────────────────── */
-const NX = {
-  allProjects:          [],
-  filtered:             [],
-  activeTeam:           'all',
-  activeStatus:         'all',
-  activeOwner:          'all',
-  supabaseUser:         null,
-  ghCache:              {},
-  currentDetailProject: null,
-  selectedLangs:        [],  // [{lang, pct}]
-  addTeam:              '',
-  addStatus:            'active',
-  fetchTimeout:         null,
-  sugFocusIdx:          -1,
-  activeHealth:         'all',
-  _pwMode:              false,
-  _realtimeSetup:       false,
-  _booted:              false,
-
-  /* localStorage-backed so state survives page refresh */
-  get userProfile() {
-    return JSON.parse(localStorage.getItem('nexus_profile') || 'null');
-  },
-  set userProfile(v) {
-    if (v) localStorage.setItem('nexus_profile', JSON.stringify(v));
-    else   localStorage.removeItem('nexus_profile');
-  },
-  get ghToken() {
-    return localStorage.getItem('nexus_gh_token') || '';
-  },
-  set ghToken(v) {
-    if (v) localStorage.setItem('nexus_gh_token', v);
-    else   localStorage.removeItem('nexus_gh_token');
-  },
-};
+/* The NX shared mutable store now lives in js/core/state.js (loaded early). */
 
 /* ── Supabase client (implicit flow required for GitHub Pages static hosting) */
 const _sb = supabase.createClient(SUPA_URL, SUPA_KEY, {
